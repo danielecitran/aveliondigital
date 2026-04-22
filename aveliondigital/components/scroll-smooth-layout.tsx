@@ -38,6 +38,11 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
       smooth: prefersReduced ? 0 : 1,
       ease: prefersReduced ? undefined : "power2.out",
       smoothTouch: 0,
+      /*
+       * normalizeScroll prevents the mobile browser URL bar from causing
+       * viewport-height jumps that make position:fixed pinned sections jitter.
+       */
+      normalizeScroll: true,
       effects: false,
       onUpdate: () => {
         window.dispatchEvent(new Event("avelion:scroll"));
