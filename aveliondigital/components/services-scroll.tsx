@@ -67,7 +67,6 @@ export function ServicesScroll() {
   const numRefs   = React.useRef<(HTMLSpanElement | null)[]>([]);
   const tickRefs  = React.useRef<(HTMLSpanElement | null)[]>([]);
 
-  // Tracks the index of the currently visible service (no React state → no re-renders)
   const currentIdxRef = React.useRef(0);
 
   React.useLayoutEffect(() => {
@@ -77,14 +76,7 @@ export function ServicesScroll() {
     const stage = stageRef.current;
     if (!outer || !stage) return;
 
-    const reduced  = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    /*
-     * On mobile, onUpdate fires on every touch-scroll pixel which hammers the
-     * animation system. We switch to onSnapComplete so transitions only fire
-     * once the snap has settled — matching the desktop UX without the jitter.
-     * The URL-bar viewport jump is handled by normalizeScroll in ScrollSmoother.
-     */
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // ── Initial states ──────────────────────────────────────────────────────
     titleRefs.current.forEach((el, i) =>
@@ -110,7 +102,6 @@ export function ServicesScroll() {
 
       const dir = to > from ? 1 : -1;
 
-      // Kill any in-flight tweens on these elements first
       [
         ...titleRefs.current,
         ...descRefs.current,
@@ -120,11 +111,6 @@ export function ServicesScroll() {
 
       const tl = gsap.timeline();
 
-      /*
-       * Both titles use the SAME easing (power3.inOut) and start at the same
-       * time. With a symmetric inOut easing, the gap between them is constant
-       * at ~10% throughout — they never touch or overlap.
-       */
       tl.to(
         titleRefs.current[from],
         { yPercent: -110 * dir, duration: 0.52, ease: "power3.inOut", force3D: true },
@@ -137,15 +123,12 @@ export function ServicesScroll() {
         0,
       );
 
-      // Description: fade out → fade in
       tl.to(descRefs.current[from], { opacity: 0, duration: 0.2 }, 0);
       tl.to(descRefs.current[to],   { opacity: 1, duration: 0.28 }, 0.22);
 
-      // Background number: crossfade
       tl.to(numRefs.current[from], { opacity: 0,     duration: 0.28 }, 0);
       tl.to(numRefs.current[to],   { opacity: 0.055, duration: 0.32 }, 0.16);
 
-      // Progress ticks
       tickRefs.current.forEach((el, i) => {
         if (!el) return;
         tl.to(
@@ -170,42 +153,26 @@ export function ServicesScroll() {
         pinSpacing: true,
         snap: {
           snapTo: 1 / (TOTAL - 1),
-          /*
-           * Mobile: faster snap so touch flicks feel responsive and don't
-           * overshoot. Desktop: slightly longer for the premium feel.
-           */
-          duration: isMobile
-            ? { min: 0.2, max: 0.35 }
-            : { min: 0.3, max: 0.45 },
+          duration: { min: 0.3, max: 0.45 },
           ease: "power3.inOut",
-          delay: isMobile ? 0 : 0.05,
+          delay: 0.05,
         },
         invalidateOnRefresh: true,
         /*
-         * Desktop: fire immediately when progress crosses the midpoint between
-         * two services → instant content switch, no waiting.
-         *
-         * Mobile: fire once per snap-complete to avoid animation spam during
-         * touch momentum scrolling (which fires onUpdate hundreds of times).
+         * onUpdate fires whenever scroll progress changes — on both desktop
+         * (ScrollSmoother transform) and mobile (ScrollSmoother with smoothTouch).
+         * The index check ensures animateToService only runs when crossing the
+         * midpoint between two services, so rapid scroll events are harmless.
          */
-        onUpdate: (!reduced && !isMobile)
-          ? (self) => {
+        onUpdate: reduced
+          ? undefined
+          : (self) => {
               const newIdx = Math.round(self.progress * (TOTAL - 1));
               if (newIdx !== currentIdxRef.current) {
                 animateToService(currentIdxRef.current, newIdx);
                 currentIdxRef.current = newIdx;
               }
-            }
-          : undefined,
-        onSnapComplete: (!reduced && isMobile)
-          ? (self) => {
-              const newIdx = Math.round(self.progress * (TOTAL - 1));
-              if (newIdx !== currentIdxRef.current) {
-                animateToService(currentIdxRef.current, newIdx);
-                currentIdxRef.current = newIdx;
-              }
-            }
-          : undefined,
+            },
       });
     }, outer);
 
@@ -217,17 +184,9 @@ export function ServicesScroll() {
       <div
         ref={stageRef}
         className="relative flex w-full flex-col overflow-hidden bg-neutral-100 will-change-transform"
-        /*
-         * Use 100svh (small viewport height) as the height unit on mobile —
-         * it's always the visible viewport WITHOUT the browser chrome, so the
-         * stage never shifts when the URL bar shows/hides.
-         * Falls back to 100vh on browsers that don't support svh.
-         */
         style={{ height: "100svh" }}
       >
-        {/* ── Decorative background layer ─────────────────────────────────── */}
-
-        {/* Fine dot grid */}
+        {/* ── Decorative background ────────────────────────────────────────── */}
         <div
           className="pointer-events-none absolute inset-0 select-none"
           aria-hidden
@@ -237,8 +196,6 @@ export function ServicesScroll() {
             backgroundSize: "28px 28px",
           }}
         />
-
-        {/* Corner gradient washes */}
         <div
           className="pointer-events-none absolute inset-0 select-none"
           aria-hidden
@@ -248,17 +205,11 @@ export function ServicesScroll() {
               "radial-gradient(ellipse 55% 48% at 96% 92%, rgba(0,0,0,0.022) 0%, transparent 100%)",
           }}
         />
-
-        {/* Top fade — blends dot grid smoothly into the plain white intro section */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[24%] select-none"
           aria-hidden
-          style={{
-            background: "linear-gradient(to bottom, #ffffff 0%, transparent 100%)",
-          }}
+          style={{ background: "linear-gradient(to bottom, #ffffff 0%, transparent 100%)" }}
         />
-
-        {/* Bottom wave */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 select-none text-black sm:h-28"
           aria-hidden
@@ -266,7 +217,7 @@ export function ServicesScroll() {
           <WaveBottom className="h-full w-full drop-shadow-[0_-10px_30px_rgba(0,0,0,0.18)]" />
         </div>
 
-        {/* ── Section header ─────────────────────────────────────────────── */}
+        {/* ── Section header ──────────────────────────────────────────────── */}
         <div className="relative shrink-0 px-6 pb-4 pt-[18vh] text-center sm:px-10 lg:px-16">
           <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-neutral-400 sm:text-[11px]">
             Our services
@@ -280,14 +231,10 @@ export function ServicesScroll() {
           <div className="mx-auto mt-5 h-px w-10 rounded-full bg-neutral-200" />
         </div>
 
-        {/* ── Max-width content wrapper ───────────────────────────────────── */}
+        {/* ── Max-width content wrapper ────────────────────────────────────── */}
         <div className="relative mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col justify-center px-6 pb-0 sm:px-10 lg:px-16 lg:pb-[8vh]">
 
-          {/*
-           * Background numbers — positioned to sit BEHIND the description
-           * column text. DOM order (before the grid) ensures the grid paints
-           * on top without explicit z-index.
-           */}
+          {/* Background numbers — sit behind the description column */}
           <div
             className="pointer-events-none absolute inset-0 select-none overflow-hidden"
             aria-hidden
@@ -297,22 +244,19 @@ export function ServicesScroll() {
                 key={s.num}
                 ref={(el) => { numRefs.current[i] = el; }}
                 className="absolute right-0 top-[38%] -translate-y-1/2 will-change-[opacity] font-playfair font-medium italic leading-none text-neutral-950 lg:top-[36%]"
-                style={{
-                  fontSize: "clamp(10rem, 28vw, 34rem)",
-                  letterSpacing: "-0.04em",
-                }}
+                style={{ fontSize: "clamp(10rem, 28vw, 34rem)", letterSpacing: "-0.04em" }}
               >
                 {s.num}
               </span>
             ))}
           </div>
 
-          {/* ── 12-col editorial grid ────────────────────────────────────── */}
+          {/* ── 12-col editorial grid ───────────────────────────────────────── */}
           <div className="relative grid grid-cols-1 items-end gap-y-8 lg:grid-cols-12 lg:gap-x-10 xl:gap-x-14">
 
-            {/* Title column — 7/12, overflow:hidden clips the slide */}
+            {/* Title column */}
             <div className="relative overflow-hidden will-change-transform lg:col-span-7">
-              {/* Ghost spacer: renders longest title invisibly to set wrapper height */}
+              {/* Ghost spacer sets wrapper height */}
               <div className="pointer-events-none select-none opacity-0" aria-hidden>
                 <h2
                   className="font-playfair font-medium italic leading-[0.93] tracking-[-0.035em]"
@@ -324,7 +268,6 @@ export function ServicesScroll() {
                 </h2>
               </div>
 
-              {/* All service titles — absolute, GSAP animates yPercent */}
               {SERVICES.map((s, i) => (
                 <div
                   key={s.num}
@@ -343,7 +286,7 @@ export function ServicesScroll() {
               ))}
             </div>
 
-            {/* Description column — 5/12 */}
+            {/* Description column */}
             <div className="relative lg:col-span-5 lg:pb-[0.4em]">
               {SERVICES.map((s, i) => (
                 <div
