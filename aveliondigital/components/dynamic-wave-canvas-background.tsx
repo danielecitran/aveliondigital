@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 
 /*
  * Wave background — primary path uses OffscreenCanvas + Web Worker so that
- * ALL pixel computation runs off the main thread. ScrollSmoother, GSAP
- * animations and React rendering therefore get their full 60 fps budget.
+ * ALL pixel computation runs off the main thread. GSAP animations and
+ * React rendering therefore keep their full 60 fps budget on the main thread.
  *
  * Browser support (OffscreenCanvas + RAF in workers):
  *   Chrome 69+  · Firefox 105+  · Safari 16.4+

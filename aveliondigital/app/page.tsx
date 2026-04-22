@@ -12,12 +12,6 @@ export default function Home() {
       <ScrollSmoothLayout>
         <div className="relative bg-[#050508]">
           <Hero />
-          {/*
-           * Shared white wrapper for all sections that have a white background.
-           * Any sub-pixel gap between children (caused by ScrollSmoother's
-           * translateY compositing) will show this white background instead of
-           * the dark parent — eliminating the grey line artefact on scroll.
-           */}
           <div className="bg-white">
             <IntroSection />
             <ServicesScroll />

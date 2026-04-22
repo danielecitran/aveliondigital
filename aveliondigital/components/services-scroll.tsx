@@ -76,7 +76,14 @@ export function ServicesScroll() {
     const stage = stageRef.current;
     if (!outer || !stage) return;
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced  = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    /*
+     * On mobile, GSAP snap animates window.scrollTo() which conflicts with the
+     * browser's own touch-momentum scroll — causing the "fight" that makes scroll
+     * feel janky. Disable snap on touch devices and let the user scroll freely;
+     * content still transitions at the midpoint via onUpdate.
+     */
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
 
     // ── Initial states ──────────────────────────────────────────────────────
     titleRefs.current.forEach((el, i) =>
@@ -151,19 +158,19 @@ export function ServicesScroll() {
         end: () => `+=${(TOTAL - 1) * window.innerHeight}`,
         pin: stage,
         pinSpacing: true,
-        snap: {
+        /*
+         * Snap only on desktop. On mobile, snap fights touch-momentum scroll
+         * (browser and GSAP both try to control scroll position simultaneously)
+         * which causes the jittery/stuck feeling. Native touch scroll is smooth
+         * and the content transitions correctly via onUpdate midpoint detection.
+         */
+        snap: isMobile ? undefined : {
           snapTo: 1 / (TOTAL - 1),
           duration: { min: 0.3, max: 0.45 },
           ease: "power3.inOut",
           delay: 0.05,
         },
         invalidateOnRefresh: true,
-        /*
-         * onUpdate fires whenever scroll progress changes — on both desktop
-         * (ScrollSmoother transform) and mobile (ScrollSmoother with smoothTouch).
-         * The index check ensures animateToService only runs when crossing the
-         * midpoint between two services, so rapid scroll events are harmless.
-         */
         onUpdate: reduced
           ? undefined
           : (self) => {

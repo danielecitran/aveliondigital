@@ -43,7 +43,7 @@ export function PortfolioSection() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-[0_12px_45px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/[0.085]"
+              className="group relative overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.07] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] transition hover:-translate-y-0.5 hover:bg-white/[0.11] hover:border-white/[0.18]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

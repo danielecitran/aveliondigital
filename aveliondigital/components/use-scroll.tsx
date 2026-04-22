@@ -5,34 +5,48 @@ import * as React from "react";
 
 const SCROLL_EVT = "avelion:scroll";
 
-function getScrollY() {
-  const smoother = ScrollSmoother.get();
-  if (smoother) {
-    return smoother.scrollTop();
+/**
+ * Returns the current visual scroll position, regardless of whether
+ * GSAP ScrollSmoother is active or native scroll is used.
+ *
+ * - Desktop (ScrollSmoother active): smoother.scrollTop() gives the lerped
+ *   position that matches what the user sees.
+ * - Mobile / fallback:               window.scrollY.
+ */
+function getScrollY(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const smoother = ScrollSmoother.get();
+    if (smoother) return smoother.scrollTop();
+  } catch {
+    /* ScrollSmoother not registered yet */
   }
-  return typeof window !== "undefined" ? window.scrollY : 0;
+  return window.scrollY;
 }
 
-export function useScroll(threshold: number) {
+/**
+ * Returns true once the scroll position exceeds `threshold` pixels.
+ * Listens to both the native `scroll` event (mobile / no ScrollSmoother)
+ * and the custom `avelion:scroll` event dispatched by ScrollSmoother's onUpdate.
+ */
+export function useScroll(threshold: number): boolean {
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
     const update = () => {
-      setScrolled((prev) => {
-        const next = getScrollY() > threshold;
-        return prev === next ? prev : next;
-      });
+      const next = getScrollY() > threshold;
+      setScrolled((prev) => (prev === next ? prev : next));
     };
 
-    const id = requestAnimationFrame(update);
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
+    const raf = requestAnimationFrame(update);
+    window.addEventListener("scroll",   update, { passive: true });
+    window.addEventListener("resize",   update, { passive: true });
     window.addEventListener(SCROLL_EVT, update);
 
     return () => {
-      cancelAnimationFrame(id);
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll",   update);
+      window.removeEventListener("resize",   update);
       window.removeEventListener(SCROLL_EVT, update);
     };
   }, [threshold]);
