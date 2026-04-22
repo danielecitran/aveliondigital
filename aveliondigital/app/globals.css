@@ -190,14 +190,16 @@
 
 /** Intro-Text: Swiss-Badge — dauerhafte, sehr subtile Premium-Loop. */
 @keyframes avelion-swiss-badge-breathe {
+  /*
+   * transform-only — fully GPU composited, zero CPU repaint.
+   * The previous filter: saturate/brightness caused a CPU repaint every frame.
+   */
   0%,
   100% {
     transform: translateY(0.5px) scale(1);
-    filter: saturate(1) brightness(1);
   }
   50% {
     transform: translateY(0.5px) scale(1.06);
-    filter: saturate(1.08) brightness(1.05);
   }
 }
 
@@ -222,7 +224,7 @@
 .avelion-swiss-badge {
   animation: avelion-swiss-badge-breathe 3.2s ease-in-out infinite;
   transform: translateY(0.5px) scale(1);
-  will-change: transform, filter;
+  will-change: transform;
 }
 
 .avelion-swiss-badge::after {

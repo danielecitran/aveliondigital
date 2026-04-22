@@ -10,15 +10,10 @@ type ScrollSmoothLayoutProps = {
 };
 
 /**
- * ScrollSmoother: weiches Scrollen über transformierten Content.
- * Header bleibt außerhalb (sibling), damit `position: fixed` zuverlässig bleibt.
- *
- * smoothTouch: 0.5 — aktiviert smooth scrolling auch auf Mobile/Touch.
- * Das ist entscheidend: mit smoothTouch:0 (No-Op) + normalizeScroll gab es einen
- * Konflikt. Mit aktivem smoothTouch koordiniert ScrollSmoother Pin + Scroll korrekt.
- *
- * normalizeScroll: true — verhindert, dass die mobile URL-Bar (die die Viewport-Höhe
- * dynamisch ändert) pinned position:fixed Elemente zum Zittern bringt.
+ * Desktop: ScrollSmoother — weiches Transform-basiertes Scrollen.
+ * Mobile:  ScrollSmoother komplett deaktiviert — nativer Browser-Scroll
+ *          ist auf Touch bereits smooth und fühlt sich besser an.
+ *          ScrollTrigger.normalizeScroll() stabilisiert die URL-Bar.
  */
 export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -31,41 +26,45 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
 
     gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isTouch        = window.matchMedia("(pointer: coarse)").matches;
+
+    if (isTouch) {
+      /*
+       * Mobile path — no ScrollSmoother.
+       * The wrapper/content divs are plain block elements; native window
+       * scroll works unhindered. ScrollTrigger pin/snap works correctly
+       * with native scroll.
+       *
+       * normalizeScroll prevents the mobile URL-bar (which dynamically
+       * resizes the viewport by ~56px) from causing position:fixed pinned
+       * elements to jitter.
+       */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalizer: any = !prefersReduced ? ScrollTrigger.normalizeScroll(true) : null;
+
+      const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
+
+      return () => {
+        cancelAnimationFrame(raf);
+        normalizer?.kill?.();
+      };
+    }
 
     /*
-     * Detect touch/mobile — coarse pointer = finger, fine pointer = mouse.
-     * normalizeScroll is only needed on touch devices (prevents URL-bar
-     * viewport-height jumps from shaking position:fixed pinned elements).
-     * On desktop it intercepts mouse-wheel events and causes choppiness.
+     * Desktop path — full ScrollSmoother.
+     * Cache the event object to avoid allocating a new Event() on every
+     * scroll frame. RAF-flag prevents dispatching more than once per frame.
      */
-    const isTouch = window.matchMedia("(pointer: coarse)").matches;
-
-    /*
-     * Cache the scroll event object — avoids allocating a new Event() on every
-     * scroll frame (which is up to 60× per second while scrolling).
-     * RAF-throttle prevents dispatching more than once per animation frame.
-     */
-    const scrollEvent = new Event("avelion:scroll");
-    let scrollPending = false;
+    const scrollEvent  = new Event("avelion:scroll");
+    let scrollPending  = false;
 
     const smoother = ScrollSmoother.create({
       wrapper,
       content,
       smooth: prefersReduced ? 0 : 1,
-      ease: prefersReduced ? undefined : "power2.out",
-      /*
-       * smoothTouch > 0 keeps ScrollSmoother active on touch so that
-       * pin:true and scroll-linked animations work correctly on mobile.
-       */
-      smoothTouch: prefersReduced ? 0 : 0.5,
-      /*
-       * normalizeScroll only on touch — prevents mobile URL-bar jumps.
-       * Must NOT be enabled on desktop (breaks mouse-wheel smoothness).
-       */
-      normalizeScroll: isTouch && !prefersReduced,
+      ease:   prefersReduced ? undefined : "power2.out",
+      smoothTouch: 0,
       effects: false,
       onUpdate: () => {
         if (!scrollPending) {
@@ -78,9 +77,7 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
       },
     });
 
-    const raf = requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-    });
+    const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       cancelAnimationFrame(raf);
