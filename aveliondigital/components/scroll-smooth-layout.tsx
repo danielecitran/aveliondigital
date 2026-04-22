@@ -12,6 +12,12 @@ type ScrollSmoothLayoutProps = {
 /**
  * ScrollSmoother: weiches Scrollen über transformierten Content.
  * Header bleibt außerhalb (sibling), damit `position: fixed` zuverlässig bleibt.
+ *
+ * Auf Touch-Geräten wird ScrollSmoother komplett übersprungen:
+ * – smoothTouch:0 machte es sowieso zum No-Op
+ * – ScrollSmoother's wrapper/content-Transforms können GSAP pins auf Mobile stören
+ * – Stattdessen: nativer Scroll + ScrollTrigger.normalizeScroll() verhindert
+ *   URL-Bar-bedingte Viewport-Sprünge bei position:fixed Elementen
  */
 export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -28,9 +34,37 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    /**
-     * smooth: höher = spürbarer (Default GSAP ~0.8). ~1.0 ist ein guter Kompromiss.
-     * ease: default wäre „expo“ — wirkt am Ende oft noch weich/zäh; power2.out reagiert direkter.
+    // Detect touch/mobile — any coarse-pointer device (phone, tablet)
+    const isTouch =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia("(pointer: coarse)").matches;
+
+    if (isTouch) {
+      /*
+       * Mobile path: no ScrollSmoother.
+       * The wrapper/content divs are plain block elements — native window scroll
+       * works normally. ScrollTrigger pins (position:fixed) work correctly here.
+       *
+       * normalizeScroll prevents the mobile browser URL-bar from causing
+       * viewport-height jumps that make position:fixed pinned elements jitter.
+       */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalizer: any = ScrollTrigger.normalizeScroll(true);
+
+      const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
+
+      return () => {
+        cancelAnimationFrame(raf);
+        // normalizer is a Normalizer instance — kill it on cleanup
+        normalizer?.kill?.();
+      };
+    }
+
+    /*
+     * Desktop path: full ScrollSmoother.
+     * smooth: ~1.0 is a good balance between feel and responsiveness.
+     * ease: power2.out reacts more directly than the default "expo".
      */
     const smoother = ScrollSmoother.create({
       wrapper,
@@ -38,11 +72,6 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
       smooth: prefersReduced ? 0 : 1,
       ease: prefersReduced ? undefined : "power2.out",
       smoothTouch: 0,
-      /*
-       * normalizeScroll prevents the mobile browser URL bar from causing
-       * viewport-height jumps that make position:fixed pinned sections jitter.
-       */
-      normalizeScroll: true,
       effects: false,
       onUpdate: () => {
         window.dispatchEvent(new Event("avelion:scroll"));
