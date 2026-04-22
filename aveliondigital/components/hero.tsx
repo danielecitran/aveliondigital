@@ -89,9 +89,14 @@ export function Hero() {
          ? Array.from(titleRef.current.querySelectorAll("span"))
          : [];
 
-       gsap.set([kickerRef.current, ...titleLines, subRef.current, ctaRef.current], {
-         willChange: "transform, opacity, filter",
-       });
+       const animatedEls = [kickerRef.current, ...titleLines, subRef.current, ctaRef.current];
+
+       /*
+        * will-change promotes elements to GPU composite layers for the duration
+        * of the entry animation. Clear it afterward so they don't permanently
+        * consume GPU memory.
+        */
+       gsap.set(animatedEls, { willChange: "transform, opacity, filter" });
 
        gsap.fromTo(
          washRef.current,
@@ -130,7 +135,9 @@ export function Hero() {
            { opacity: 0, y: 10, scale: 0.985, filter: "blur(4px)" },
            { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.75 },
            0.42,
-         );
+         )
+         // Release GPU layers once the entry animation is complete.
+         .call(() => gsap.set(animatedEls, { clearProps: "willChange" }));
      }, root);
 
      return () => ctx.revert();

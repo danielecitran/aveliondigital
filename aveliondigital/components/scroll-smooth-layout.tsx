@@ -35,26 +35,46 @@ export function ScrollSmoothLayout({ children }: ScrollSmoothLayoutProps) {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
+    /*
+     * Detect touch/mobile — coarse pointer = finger, fine pointer = mouse.
+     * normalizeScroll is only needed on touch devices (prevents URL-bar
+     * viewport-height jumps from shaking position:fixed pinned elements).
+     * On desktop it intercepts mouse-wheel events and causes choppiness.
+     */
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+
+    /*
+     * Cache the scroll event object — avoids allocating a new Event() on every
+     * scroll frame (which is up to 60× per second while scrolling).
+     * RAF-throttle prevents dispatching more than once per animation frame.
+     */
+    const scrollEvent = new Event("avelion:scroll");
+    let scrollPending = false;
+
     const smoother = ScrollSmoother.create({
       wrapper,
       content,
       smooth: prefersReduced ? 0 : 1,
       ease: prefersReduced ? undefined : "power2.out",
       /*
-       * smoothTouch:0.5 gibt Mobile ein spürbares Smooth-Scroll-Gefühl.
-       * Wert < 1 damit es sich nicht träge anfühlt, > 0 damit ScrollSmoother
-       * aktiv ist und pin:true / normalizeScroll korrekt zusammenarbeiten.
+       * smoothTouch > 0 keeps ScrollSmoother active on touch so that
+       * pin:true and scroll-linked animations work correctly on mobile.
        */
       smoothTouch: prefersReduced ? 0 : 0.5,
       /*
-       * normalizeScroll:true funktioniert korrekt wenn smoothTouch > 0 gesetzt ist.
-       * Verhindert Viewport-Sprünge durch die mobile URL-Bar (zeigt/versteckt sich
-       * beim Scrollen und ändert die Viewport-Höhe um ~56px).
+       * normalizeScroll only on touch — prevents mobile URL-bar jumps.
+       * Must NOT be enabled on desktop (breaks mouse-wheel smoothness).
        */
-      normalizeScroll: !prefersReduced,
+      normalizeScroll: isTouch && !prefersReduced,
       effects: false,
       onUpdate: () => {
-        window.dispatchEvent(new Event("avelion:scroll"));
+        if (!scrollPending) {
+          scrollPending = true;
+          requestAnimationFrame(() => {
+            window.dispatchEvent(scrollEvent);
+            scrollPending = false;
+          });
+        }
       },
     });
 
