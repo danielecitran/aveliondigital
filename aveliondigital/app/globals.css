@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+::selection {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -175,6 +185,72 @@
     animation: none;
     opacity: 0;
     visibility: hidden;
+  }
+}
+
+/** Intro-Text: Swiss-Badge — dauerhafte, sehr subtile Premium-Loop. */
+@keyframes avelion-swiss-badge-breathe {
+  0%,
+  100% {
+    transform: translateY(0.5px) scale(1);
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    transform: translateY(0.5px) scale(1.06);
+    filter: saturate(1.08) brightness(1.05);
+  }
+}
+
+@keyframes avelion-swiss-badge-sheen {
+  0% {
+    transform: translateX(-60%) rotate(18deg);
+    opacity: 0.55;
+  }
+  35% {
+    opacity: 0.7;
+  }
+  70% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateX(60%) rotate(18deg);
+    opacity: 0.55;
+  }
+}
+
+/** Swiss-Badge Klassen (ohne Tailwind-arbitrary, damit es sicher läuft). */
+.avelion-swiss-badge {
+  animation: avelion-swiss-badge-breathe 3.2s ease-in-out infinite;
+  transform: translateY(0.5px) scale(1);
+  will-change: transform, filter;
+}
+
+.avelion-swiss-badge::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  transform: translateX(-60%) rotate(18deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 44%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.22) 56%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  opacity: 0.85;
+  animation: avelion-swiss-badge-sheen 2.6s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avelion-swiss-badge,
+  .avelion-swiss-badge::after {
+    animation: none !important;
+  }
+  .avelion-swiss-badge::after {
+    opacity: 0 !important;
   }
 }
 

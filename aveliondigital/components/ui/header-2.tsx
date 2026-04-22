@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import gsap from "gsap";
 
 import { HeaderLogoAnimatedSvg } from "@/components/header-logo-animated-svg";
 import { MenuToggleIcon } from "@/components/menu-toggle-icon";
@@ -16,8 +17,57 @@ const navLinks = [
 ] as const;
 
 export function Header() {
+  const navRef = React.useRef<HTMLElement>(null);
   const [open, setOpen] = React.useState(false);
   const scrolled = useScroll(10);
+
+  React.useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const logo = nav.querySelector("[data-header-logo]");
+    const links = Array.from(nav.querySelectorAll("[data-header-link]"));
+    const burger = nav.querySelector("[data-header-burger]");
+
+    const ctx = gsap.context(() => {
+      gsap.set([logo, ...links, burger], {
+        willChange: "transform, opacity, filter",
+      });
+
+      gsap
+        .timeline({ defaults: { ease: "power3.out" } })
+        .fromTo(
+          logo,
+          { opacity: 0, y: -10, filter: "blur(8px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6 },
+          0,
+        )
+        .fromTo(
+          links,
+          { opacity: 0, y: -10, filter: "blur(8px)" },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.55,
+            stagger: 0.055,
+          },
+          0.08,
+        )
+        .fromTo(
+          burger,
+          { opacity: 0, scale: 0.96, filter: "blur(6px)" },
+          { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55 },
+          0.16,
+        );
+    }, nav);
+
+    return () => ctx.revert();
+  }, []);
 
   React.useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -49,6 +99,7 @@ export function Header() {
           )}
         >
           <nav
+            ref={navRef}
             className="flex h-14 items-center justify-between gap-4 px-4 md:h-14 md:px-5 lg:px-6"
             aria-label="Hauptnavigation"
           >
@@ -61,12 +112,19 @@ export function Header() {
               )}
               aria-label="Startseite"
             >
-              <HeaderLogoAnimatedSvg />
+              <span data-header-logo className="inline-flex items-center leading-none">
+                <HeaderLogoAnimatedSvg />
+              </span>
             </Link>
 
             <div className="hidden items-center gap-0.5 md:flex">
               {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} className={linkClass}>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={linkClass}
+                  data-header-link
+                >
                   {link.label}
                 </Link>
               ))}
@@ -80,6 +138,7 @@ export function Header() {
                 "transition-[border-color,background-color] duration-300 hover:border-white/55 hover:bg-white/[0.1]",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80",
               )}
+              data-header-burger
               aria-expanded={open}
               aria-controls="mobile-nav"
               aria-label={open ? "Menü schließen" : "Menü öffnen"}

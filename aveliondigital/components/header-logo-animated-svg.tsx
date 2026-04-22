@@ -29,7 +29,7 @@ export function HeaderLogoAnimatedSvg() {
     if (!mount) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setUseFallback(true);
+      queueMicrotask(() => setUseFallback(true));
       return;
     }
 
