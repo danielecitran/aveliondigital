@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import gsap from "gsap";
 
 import { HeaderLogoAnimatedSvg } from "@/components/header-logo-animated-svg";
@@ -21,6 +22,7 @@ export function Header() {
   const navRef = React.useRef<HTMLElement>(null);
   const [open, setOpen] = React.useState(false);
   const scrolled = useScroll(10);
+  const pathname = usePathname();
 
   React.useLayoutEffect(() => {
     const nav = navRef.current;
@@ -79,11 +81,12 @@ export function Header() {
 
   const onNavClick = React.useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+      setOpen(false);
+      if (pathname !== "/") return;
       e.preventDefault();
       scrollToSection(sectionId);
-      setOpen(false);
     },
-    [],
+    [pathname],
   );
 
   const linkClass = cn(
@@ -131,7 +134,7 @@ export function Header() {
               {navLinks.map((link) => (
                 <a
                   key={link.sectionId}
-                  href={`#${link.sectionId}`}
+                  href={`/#${link.sectionId}`}
                   className={linkClass}
                   data-header-link
                   onClick={(e) => onNavClick(e, link.sectionId)}
@@ -185,7 +188,7 @@ export function Header() {
             {navLinks.map((link) => (
               <a
                 key={link.sectionId}
-                href={`#${link.sectionId}`}
+                href={`/#${link.sectionId}`}
                 className={cn(
                   linkClass,
                   "block rounded-xl px-4 py-3.5 text-left text-[12px] tracking-[0.18em] hover:bg-white/[0.06]",

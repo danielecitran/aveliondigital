@@ -3,7 +3,10 @@
 import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
+
+import { resetPageScroll } from "@/lib/smooth-scroll";
 
 type Props = { children: React.ReactNode };
 
@@ -18,37 +21,36 @@ type Props = { children: React.ReactNode };
 export function ScrollSmoothLayout({ children }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
+    resetPageScroll();
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isTouch        = window.matchMedia("(pointer: coarse)").matches;
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
 
     if (isTouch) {
-      // Mobile: wrapper/content divs are plain block elements.
-      // Native window scroll + ScrollTrigger pin/snap work perfectly.
-      const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
-      return () => cancelAnimationFrame(raf);
+      const raf = requestAnimationFrame(() => {
+        resetPageScroll();
+        ScrollTrigger.refresh();
+      });
+      return () => {
+        cancelAnimationFrame(raf);
+        resetPageScroll();
+      };
     }
 
     const wrapper = wrapperRef.current;
     const content = contentRef.current;
     if (!wrapper || !content) return;
 
-    // Cached event object — reused each frame instead of allocating a new one.
     const scrollEvent = new Event("avelion:scroll");
     let scrollPending = false;
 
     const smoother = ScrollSmoother.create({
       wrapper,
       content,
-      /*
-       * 0.8 is the sweet spot: still feels distinctly smooth (the "GSAP feel"
-       * the user wants), but half the lag accumulation of the original 1.0.
-       * With the canvas now in a Web Worker the main thread has enough headroom
-       * to consistently hit 60 fps even on mid-range laptops.
-       */
       smooth: prefersReduced ? 0 : 0.8,
       ease: prefersReduced ? undefined : "power2.out",
       smoothTouch: 0,
@@ -64,13 +66,19 @@ export function ScrollSmoothLayout({ children }: Props) {
       },
     });
 
-    const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
+    smoother.scrollTo(0, false);
+
+    const raf = requestAnimationFrame(() => {
+      resetPageScroll();
+      ScrollTrigger.refresh();
+    });
 
     return () => {
       cancelAnimationFrame(raf);
       smoother.kill();
+      resetPageScroll();
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <div ref={wrapperRef} id="smooth-wrapper">

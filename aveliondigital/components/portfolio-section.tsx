@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { cn } from "@/lib/utils";
+import { INK_FILL_SIZE, useInkFill } from "@/components/use-ink-fill";
 
 type Project = {
   id: string;
@@ -47,73 +48,36 @@ const PROJECTS: readonly Project[] = [
 // CTAs — ink-fill primary matches hero
 // ────────────────────────────────────────────────────────────────────────────
 function PrimaryCta({ href, label }: { href: string; label: string }) {
-  const fillRef = React.useRef<HTMLSpanElement>(null);
+  const ink = useInkFill();
   const isExternal = href.startsWith("http");
-
-  const animateFill = React.useCallback((r: number) => {
-    const fill = fillRef.current;
-    if (!fill) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    gsap.killTweensOf(fill);
-    gsap.to(fill, {
-      duration: r === 0 ? 0.7 : 0.95,
-      ease: r === 0 ? "power2.out" : "expo.out",
-      overwrite: true,
-      "--r": `${r}px`,
-    } as gsap.TweenVars);
-  }, []);
-
-  const updateCoords = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    const el = e.currentTarget;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`);
-    el.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`);
-  };
 
   return (
     <Link
       href={href}
       {...(isExternal ? { target: "_blank", rel: "noreferrer noopener" } : {})}
-      onPointerMove={updateCoords}
-      onPointerEnter={(e) => {
-        updateCoords(e);
-        const r = e.currentTarget.getBoundingClientRect();
-        const maxR = Math.hypot(r.width, r.height);
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          gsap.set(fillRef.current, { "--r": `${maxR}px` } as gsap.TweenVars);
-          return;
-        }
-        if (fillRef.current) {
-          gsap.killTweensOf(fillRef.current);
-          gsap.set(fillRef.current, { "--r": "0px" } as gsap.TweenVars);
-        }
-        animateFill(maxR);
-      }}
-      onPointerLeave={() => animateFill(0)}
+      onPointerMove={ink.onPointerMove}
+      onPointerEnter={ink.onPointerEnter}
+      onPointerLeave={ink.onPointerLeave}
       className={cn(
         "group relative inline-flex items-center gap-2 overflow-hidden rounded-full",
-        "bg-white/[0.05] px-7 py-3.5 ring-1 ring-inset ring-white/20",
+        "bg-white/[0.05] px-7 py-3.5",
+        "border border-white/20",
         "font-dm-sans-hero text-[11px] font-semibold uppercase tracking-[0.26em] text-white",
-        "shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_-1px_0_rgba(0,0,0,0.18)_inset]",
-        "transition-[color,box-shadow] duration-[580ms] ease-[cubic-bezier(0.33,1,0.68,1)]",
-        "hover:text-neutral-950 hover:ring-white/55",
-        "hover:shadow-[0_22px_56px_-20px_rgba(255,255,255,0.32),0_0_0_1px_rgba(255,255,255,0.14)_inset]",
+        "transition-colors duration-500 ease-out",
+        "hover:border-white/55 hover:text-neutral-950",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/90",
       )}
-      style={
-        {
-          ["--mx" as never]: "50%",
-          ["--my" as never]: "50%",
-        } as React.CSSProperties
-      }
     >
       <span
-        ref={fillRef}
-        className="pointer-events-none absolute inset-0 rounded-full"
+        ref={ink.fillRef}
+        className="pointer-events-none absolute left-0 top-0 rounded-full bg-white"
         aria-hidden
         style={{
-          background: "white",
-          clipPath: "circle(var(--r, 0px) at var(--mx, 50%) var(--my, 50%))",
+          width: INK_FILL_SIZE,
+          height: INK_FILL_SIZE,
+          marginLeft: -INK_FILL_SIZE / 2,
+          marginTop: -INK_FILL_SIZE / 2,
+          willChange: "transform",
         }}
       />
       <span className="relative z-10">{label}</span>
@@ -369,101 +333,105 @@ function ProjectShowcase({
         !isLast && "pb-24 sm:pb-28 lg:pb-36",
       )}
     >
-      {/* ghost index — obere Hälfte sichtbar, untere weich ausgeblendet, dezent grau */}
-      <span
-        ref={indexRef}
-        className={cn(
-          "pointer-events-none absolute z-0 select-none font-playfair font-medium italic",
-          reversed ? "right-0 lg:right-[-2%]" : "left-0 lg:left-[-2%]",
-          "-top-4 sm:-top-6",
-        )}
-        style={{
-          fontSize: "clamp(7rem, 18vw, 22rem)",
-          letterSpacing: "-0.04em",
-          lineHeight: 0.9,
-          color: "#fff",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
-          maskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
-        }}
-        aria-hidden
-      >
-        {project.index}
-      </span>
-
       <div
         className={cn(
-          "relative z-[1] grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-x-14 xl:gap-x-16",
+          "relative z-[1] grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-x-10 xl:gap-x-14",
           reversed && "lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1",
         )}
       >
-        {/* copy column */}
-        <div className="relative z-10 lg:col-span-5">
-          <div ref={metaRef} className="flex items-stretch gap-3.5">
+        {/* copy column — block centered in the half, type left-aligned */}
+        <div className="relative z-10 flex justify-center">
+          <div className="relative w-full max-w-[32rem] text-center lg:text-left">
             <span
-              className="w-px shrink-0 bg-gradient-to-b from-white/0 via-white/45 to-white/0"
+              ref={indexRef}
+              className={cn(
+                "pointer-events-none absolute z-0 w-max max-w-none select-none whitespace-nowrap font-playfair font-medium italic",
+                "left-1/2 -translate-x-1/2 lg:translate-x-0",
+                reversed ? "lg:left-auto lg:right-[-2%]" : "lg:left-[-2%]",
+                "-top-4 sm:-top-6",
+              )}
+              style={{
+                fontSize: "clamp(7rem, 18vw, 22rem)",
+                letterSpacing: "-0.04em",
+                lineHeight: 0.9,
+                color: "#fff",
+                WebkitMaskImage:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
+                maskImage:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
+              }}
               aria-hidden
-            />
-            <div>
-              <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/50 sm:text-[11px]">
-                {project.category}
-              </p>
-              <p className="mt-1 font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.3em] text-white/30">
-                {project.year}
-              </p>
-            </div>
-          </div>
-
-          <div ref={titleRef} className="mt-8 sm:mt-10">
-            <h3
-              id={`project-${project.id}-title`}
-              className="hero-display font-semibold leading-[0.98] tracking-[-0.03em] text-white"
-              style={{ fontSize: "clamp(2.4rem, 4.8vw, 4.5rem)" }}
             >
-              {project.title}
-            </h3>
-            <p
-              className="mt-3 font-dm-sans-hero font-medium tracking-[-0.02em] text-white/55"
-              style={{ fontSize: "clamp(1rem, 1.5vw, 1.35rem)" }}
-            >
-              {project.subtitle}
-            </p>
-          </div>
+              {project.index}
+            </span>
 
-          <div ref={bodyRef}>
-            <p className="mt-7 max-w-[32rem] font-dm-sans-hero text-[14px] leading-[1.88] text-white/62 sm:mt-8 sm:text-[15px] lg:text-base">
-              {project.description}
-            </p>
-
-            <ul className="mt-7 flex flex-wrap gap-2 sm:mt-8">
-              {project.tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="font-dm-sans-hero rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-white/55 sm:text-[11px]"
-                >
-                  {tag}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4 sm:mt-10">
-              <PrimaryCta
-                href={project.primaryCta.href}
-                label={project.primaryCta.label}
-              />
-              {project.secondaryCta && project.secondaryCta.href !== "#" ? (
-                <SecondaryCta
-                  href={project.secondaryCta.href}
-                  label={project.secondaryCta.label}
+            <div className="relative z-[1]">
+              <div ref={metaRef} className="flex items-stretch justify-center gap-3.5 lg:justify-start">
+                <span
+                  className="w-px shrink-0 bg-gradient-to-b from-white/0 via-white/45 to-white/0"
+                  aria-hidden
                 />
-              ) : null}
+                <div>
+                  <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/50 sm:text-[11px]">
+                    {project.category}
+                  </p>
+                  <p className="mt-1 font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.3em] text-white/30">
+                    {project.year}
+                  </p>
+                </div>
+              </div>
+
+              <div ref={titleRef} className="mt-8 sm:mt-10">
+                <h3
+                  id={`project-${project.id}-title`}
+                  className="hero-display font-semibold leading-[0.98] tracking-[-0.03em] text-white"
+                  style={{ fontSize: "clamp(2.4rem, 4.8vw, 4.5rem)" }}
+                >
+                  {project.title}
+                </h3>
+                <p
+                  className="mt-3 font-dm-sans-hero font-medium tracking-[-0.02em] text-white/55"
+                  style={{ fontSize: "clamp(1rem, 1.5vw, 1.35rem)" }}
+                >
+                  {project.subtitle}
+                </p>
+              </div>
+
+              <div ref={bodyRef}>
+                <p className="mt-7 font-dm-sans-hero text-[14px] leading-[1.88] text-white/62 sm:mt-8 sm:text-[15px] lg:text-base">
+                  {project.description}
+                </p>
+
+                <ul className="mt-7 flex flex-wrap justify-center gap-2 sm:mt-8 lg:justify-start">
+                  {project.tags.map((tag) => (
+                    <li
+                      key={tag}
+                      className="font-dm-sans-hero rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-white/55 sm:text-[11px]"
+                    >
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-4 sm:mt-10 lg:justify-start">
+                  <PrimaryCta
+                    href={project.primaryCta.href}
+                    label={project.primaryCta.label}
+                  />
+                  {project.secondaryCta && project.secondaryCta.href !== "#" ? (
+                    <SecondaryCta
+                      href={project.secondaryCta.href}
+                      label={project.secondaryCta.label}
+                    />
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* preview column */}
-        <div ref={previewRef} className="relative lg:col-span-7">
+        <div ref={previewRef} className="relative flex items-center justify-center">
           <ProjectPreview project={project} paused={previewPaused} />
         </div>
       </div>
@@ -520,7 +488,7 @@ export function PortfolioSection() {
       id="work"
       ref={sectionRef}
       aria-labelledby="portfolio-title"
-      className="relative z-20 -mt-px scroll-mt-[5.5rem] overflow-x-clip bg-[#050508] text-white"
+      className="relative z-20 -mt-3 scroll-mt-[5.5rem] overflow-x-clip bg-[#050508] text-white"
     >
       {/* top fade from services wave */}
       <div
@@ -540,16 +508,7 @@ export function PortfolioSection() {
           backgroundSize: "auto, auto, 28px 28px",
         }}
       />
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0,0,0,0.85), transparent 65%)",
-        }}
-      />
-
-      <div className="relative mx-auto w-full max-w-[1440px] px-6 pb-28 pt-24 sm:px-10 sm:pb-32 sm:pt-28 lg:px-16 lg:pb-40 lg:pt-32">
+      <div className="relative mx-auto w-full max-w-[1440px] px-6 pb-28 pt-24 sm:px-10 sm:pb-32 sm:pt-28 lg:px-16 lg:pb-36 lg:pt-32">
         {/* header */}
         <div ref={headerRef} className="mx-auto max-w-3xl text-center">
           <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/55 sm:text-[11px]">
@@ -557,7 +516,7 @@ export function PortfolioSection() {
           </p>
           <h2
             id="portfolio-title"
-            className="mt-4 font-playfair font-medium italic leading-[0.95] tracking-[-0.03em] text-white"
+            className="mt-4 font-playfair font-medium leading-[0.95] tracking-[-0.03em] text-white"
             style={{ fontSize: "clamp(2.35rem, 5vw, 4.5rem)" }}
           >
             Selected Work

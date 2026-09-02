@@ -1,3 +1,4 @@
+import { ContactSection } from "@/components/contact-section";
 import { Hero } from "@/components/hero";
 import { IntroSection } from "@/components/intro-section";
 import { PortfolioSection } from "@/components/portfolio-section";
@@ -14,14 +15,10 @@ export default function Home() {
           <Hero />
           <div className="bg-white">
             <IntroSection />
-            <ServicesScroll />
           </div>
+          <ServicesScroll />
           <PortfolioSection />
-          <section
-            id="contact"
-            aria-label="Contact"
-            className="scroll-mt-[5.5rem] bg-[#050508]"
-          />
+          <ContactSection />
         </div>
       </ScrollSmoothLayout>
     </>

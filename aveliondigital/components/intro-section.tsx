@@ -112,7 +112,7 @@ export function IntroSection() {
           <p>
             We deliver{" "}
             <strong className="font-semibold text-neutral-900">
-              high-performance apps, conversion-driven websites and AI-powered
+              high-performance apps, conversion-driven websites and 
               marketing systems
             </strong>{" "}
             where quality, speed and measurable results are non-negotiable.

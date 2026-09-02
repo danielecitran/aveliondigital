@@ -5,6 +5,7 @@
 
 import { cn } from "@/lib/utils";
 import { scrollToSection } from "@/lib/smooth-scroll";
+import { INK_FILL_SIZE, useInkFill } from "@/components/use-ink-fill";
 
 import HeroWave from "@/components/dynamic-wave-canvas-background";
 
@@ -15,66 +16,7 @@ export function Hero() {
    const subRef = React.useRef<HTMLParagraphElement>(null);
    const ctaRef = React.useRef<HTMLAnchorElement>(null);
    const washRef = React.useRef<HTMLDivElement>(null);
-  const ctaFillRef = React.useRef<HTMLSpanElement>(null);
-
-  const onCtaPointerMove = React.useCallback(
-    (e: React.PointerEvent<HTMLAnchorElement>) => {
-      const el = e.currentTarget;
-      const r = el.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width) * 100;
-      const y = ((e.clientY - r.top) / r.height) * 100;
-      el.style.setProperty("--mx", `${x.toFixed(2)}%`);
-      el.style.setProperty("--my", `${y.toFixed(2)}%`);
-    },
-    [],
-  );
-
-  const animateCtaFillTo = React.useCallback((radius: number) => {
-    const fill = ctaFillRef.current;
-    if (!fill) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    gsap.killTweensOf(fill);
-    gsap.to(fill, {
-      // langsamer + weicher = premium (kein „snap“)
-      duration: radius === 0 ? 0.8 : 1.05,
-      ease: radius === 0 ? "power2.out" : "expo.out",
-      overwrite: true,
-      "--r": `${radius}px`,
-    } as gsap.TweenVars);
-  }, []);
-
-  const onCtaPointerEnter = React.useCallback(
-    (e: React.PointerEvent<HTMLAnchorElement>) => {
-      const el = e.currentTarget;
-      const r = el.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width) * 100;
-      const y = ((e.clientY - r.top) / r.height) * 100;
-      el.style.setProperty("--mx", `${x.toFixed(2)}%`);
-      el.style.setProperty("--my", `${y.toFixed(2)}%`);
-
-      const maxR = Math.hypot(r.width, r.height);
-      // Start klein am Cursorpunkt, dann expand.
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(ctaFillRef.current, { "--r": `${maxR}px` } as gsap.TweenVars);
-      } else {
-        // Reset erzwingen (auch wenn gerade ein Leave-Tween läuft),
-        // damit der Fill immer am neuen Punkt sauber „neu startet“.
-        if (ctaFillRef.current) {
-          gsap.killTweensOf(ctaFillRef.current);
-          gsap.set(ctaFillRef.current, { "--r": "0px" } as gsap.TweenVars);
-        }
-        animateCtaFillTo(maxR);
-      }
-    },
-    [animateCtaFillTo],
-  );
-
-  const onCtaPointerLeave = React.useCallback(() => {
-    if (ctaFillRef.current) {
-      gsap.killTweensOf(ctaFillRef.current);
-    }
-    animateCtaFillTo(0);
-  }, [animateCtaFillTo]);
+  const ink = useInkFill();
 
    React.useLayoutEffect(() => {
      const root = rootRef.current;
@@ -89,7 +31,8 @@ export function Hero() {
          ? Array.from(titleRef.current.querySelectorAll("span"))
          : [];
 
-       const kickerAccent = kickerRef.current?.querySelector("[data-hero-kicker-accent]");
+       const kickerAccent =
+         kickerRef.current?.querySelector("[data-hero-kicker-accent]") ?? null;
        const kickerLines = kickerRef.current
          ? Array.from(kickerRef.current.querySelectorAll("[data-hero-kicker-line]"))
          : [];
@@ -100,7 +43,7 @@ export function Hero() {
          ...titleLines,
          subRef.current,
          ctaRef.current,
-       ].filter(Boolean);
+       ].filter((el): el is Element => Boolean(el));
 
        /*
         * will-change promotes elements to GPU composite layers for the duration
@@ -115,9 +58,10 @@ export function Hero() {
          { opacity: 1, duration: 0.9, ease: "power2.out", delay: 0.05 },
        );
 
-       gsap
-         .timeline({ defaults: { ease: "power3.out" } })
-         .fromTo(
+       const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+       if (kickerAccent) {
+         intro.fromTo(
            kickerAccent,
            { scaleY: 0, opacity: 0 },
            {
@@ -128,7 +72,10 @@ export function Hero() {
              transformOrigin: "top center",
            },
            0,
-         )
+         );
+       }
+
+       intro
          .fromTo(
            kickerLines,
            { opacity: 0, y: 8, filter: "blur(5px)" },
@@ -189,7 +136,7 @@ export function Hero() {
       <div
         className={cn(
           "relative z-10 mx-auto w-full max-w-5xl px-6 py-24 sm:px-10 sm:py-28 lg:px-14 lg:py-32",
-          "flex flex-col items-center text-center lg:items-start lg:text-left",
+          "flex flex-col items-start text-left",
         )}
       >
        <div
@@ -247,45 +194,34 @@ export function Hero() {
          ref={ctaRef}
           href="#contact"
           className={cn(
-            "font-dm-sans-hero group relative inline-flex max-w-full rounded-full",
-            // modern idle: softer ring + inset highlight (statt „harte“ Border)
+            "font-dm-sans-hero group relative mx-auto inline-flex max-w-full rounded-full lg:mx-0",
             "bg-white/[0.05] px-10 py-3.5 sm:px-12 sm:py-4",
-            "ring-1 ring-inset ring-white/20",
+            "border border-white/20",
             "text-[11px] font-semibold uppercase tracking-[0.26em] text-white/95 sm:text-xs sm:tracking-[0.28em]",
-            "shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_-1px_0_rgba(0,0,0,0.18)_inset]",
             "overflow-hidden",
-            "transition-[box-shadow,color,border-color] duration-[580ms] ease-[cubic-bezier(0.33,1,0.68,1)]",
-            "hover:ring-white/55 hover:text-neutral-950",
-            "hover:shadow-[0_22px_56px_-20px_rgba(255,255,255,0.32),0_0_0_1px_rgba(255,255,255,0.14)_inset]",
-            "active:duration-200",
+            "transition-colors duration-500 ease-out",
+            "hover:border-white/55 hover:text-neutral-950",
             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/90",
           )}
-          style={
-            {
-              ["--mx" as never]: "50%",
-              ["--my" as never]: "50%",
-            } as React.CSSProperties
-          }
-          onPointerMove={onCtaPointerMove}
-          onPointerEnter={onCtaPointerEnter}
-          onPointerLeave={onCtaPointerLeave}
+          onPointerMove={ink.onPointerMove}
+          onPointerEnter={ink.onPointerEnter}
+          onPointerLeave={ink.onPointerLeave}
           onClick={(e) => {
             e.preventDefault();
             scrollToSection("contact");
           }}
         >
           <span
-            ref={ctaFillRef}
-            className="pointer-events-none absolute inset-0 rounded-full"
+            ref={ink.fillRef}
+            className="pointer-events-none absolute left-0 top-0 rounded-full bg-white"
             aria-hidden
             style={{
-              background: "white",
-              clipPath: "circle(var(--r, 0px) at var(--mx, 50%) var(--my, 50%))",
+              width: INK_FILL_SIZE,
+              height: INK_FILL_SIZE,
+              marginLeft: -INK_FILL_SIZE / 2,
+              marginTop: -INK_FILL_SIZE / 2,
+              willChange: "transform",
             }}
-          />
-          <span
-            className="hero-cta-ripple pointer-events-none absolute inset-0 rounded-full"
-            aria-hidden
           />
           <span className="relative z-10 truncate">LET&apos;S TALK</span>
         </a>

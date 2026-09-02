@@ -10,18 +10,32 @@ import { useEffect, useRef } from "react";
  * Browser support (OffscreenCanvas + RAF in workers):
  *   Chrome 69+  · Firefox 105+  · Safari 16.4+
  * Older browsers fall back to the original main-thread renderer.
+ *
+ * The canvas is created inside the effect (not via JSX) because
+ * transferControlToOffscreen() is one-way. React Strict Mode remounts reuse
+ * the same DOM node; a reused canvas cannot be transferred or get a 2d context.
  */
 
 const WAVE_TIME_SCALE    = 0.38;
 const SIM_PIXELS_DESKTOP = 20_000;
 const SIM_PIXELS_MOBILE  =  8_000;
 
+function createWaveCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.className = "h-full w-full";
+  canvas.setAttribute("aria-hidden", "true");
+  return canvas;
+}
+
 export default function HeroWave() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const canvas = createWaveCanvas();
+    container.replaceChildren(canvas);
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const isTouch     = window.matchMedia("(pointer: coarse)").matches;
@@ -39,7 +53,9 @@ export default function HeroWave() {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      return;
+      return () => {
+        canvas.remove();
+      };
     }
 
     /* ── Primary: OffscreenCanvas + Web Worker ─────────────────────────
@@ -47,18 +63,17 @@ export default function HeroWave() {
      * loop never touches the main thread.                                */
     const supportsOffscreen =
       typeof OffscreenCanvas !== "undefined" &&
-      typeof (canvas as HTMLCanvasElement & { transferControlToOffscreen?: () => OffscreenCanvas })
-        .transferControlToOffscreen === "function";
+      typeof canvas.transferControlToOffscreen === "function";
 
     if (supportsOffscreen) {
       let worker: Worker | null = null;
+      let transferred = false;
 
       try {
         // transferControlToOffscreen() is a one-way transfer — after this
         // the canvas DOM element still renders whatever the worker draws.
-        const offscreen = (canvas as HTMLCanvasElement & {
-          transferControlToOffscreen: () => OffscreenCanvas;
-        }).transferControlToOffscreen();
+        const offscreen = canvas.transferControlToOffscreen();
+        transferred = true;
 
         worker = new Worker("/wave-worker.js");
 
@@ -92,19 +107,29 @@ export default function HeroWave() {
           window.removeEventListener("resize", onResize);
           document.removeEventListener("visibilitychange", onVisibility);
           worker?.postMessage({ type: "stop" });
-          // Small delay so the worker can process "stop" before being killed.
-          setTimeout(() => worker?.terminate(), 100);
+          worker?.terminate();
+          canvas.remove();
         };
       } catch {
-        // If transferControlToOffscreen throws for any reason, fall through
-        // to the main-thread renderer below.
         worker?.terminate();
+        // After a successful transfer the canvas cannot be used from the
+        // main thread — getContext() would throw InvalidStateError.
+        if (transferred) {
+          canvas.remove();
+          return;
+        }
       }
     }
 
     /* ── Fallback: main-thread renderer (same logic as worker) ─────────
      * Used on browsers that don't support OffscreenCanvas.               */
-    const ctx = canvas.getContext("2d", { alpha: false });
+    let ctx: CanvasRenderingContext2D | null = null;
+    try {
+      ctx = canvas.getContext("2d", { alpha: false });
+    } catch {
+      canvas.remove();
+      return;
+    }
     if (!ctx) return;
 
     const MAX_SIM_PIXELS = isTouch ? SIM_PIXELS_MOBILE : SIM_PIXELS_DESKTOP;
@@ -204,12 +229,13 @@ export default function HeroWave() {
       window.removeEventListener("resize", resizeCanvas);
       document.removeEventListener("visibilitychange", onVisibility);
       cancelAnimationFrame(rafId);
+      canvas.remove();
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      ref={containerRef}
       className="pointer-events-none absolute inset-0 h-full w-full"
       aria-hidden
     />

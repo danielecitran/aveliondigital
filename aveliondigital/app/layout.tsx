@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
-import { CursorFollower } from "@/components/cursor-follower";
+import { CursorFollowerHost } from "@/components/cursor-follower";
 import "./globals.css";
 
 /*
@@ -31,9 +31,20 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Daverion Digital – Premium Creative & Tech Agency",
+  title: "Daverion Digital | Premium Creative & Tech Agency",
   description:
     "Swiss creative and technology agency building apps, websites, brands and digital products. High-performance, conversion-driven and AI-powered.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({
@@ -48,7 +59,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <CursorFollower />
+        <CursorFollowerHost />
       </body>
     </html>
   );

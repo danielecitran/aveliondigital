@@ -137,18 +137,16 @@
   html {
     @apply font-sans;
   }
+  button:not(:disabled),
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer;
+  }
 }
 
-@keyframes hero-cta-ripple {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 0 1.35rem rgba(255, 255, 255, 0);
-  }
-}
-
-/** Intro-Mark: Glanz über dem Logo (global, damit Keyframes zuverlässig laufen). */
 @keyframes avelion-intro-logo-sheen {
   0% {
     background-position: 140% 50%;
@@ -269,11 +267,5 @@
     font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
     font-synthesis: none;
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .group:hover .hero-cta-ripple {
-    animation: hero-cta-ripple 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
