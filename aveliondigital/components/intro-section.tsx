@@ -69,9 +69,10 @@ export function IntroSection() {
 
   return (
     <section
+      id="about"
       ref={sectionRef}
       className={cn(
-        "relative z-10 w-full bg-white text-neutral-950",
+        "relative z-10 w-full scroll-mt-[5.5rem] bg-white text-neutral-950",
         "-mt-12 rounded-t-[2.25rem] sm:-mt-16 sm:rounded-t-[2.75rem] md:-mt-20 md:rounded-t-[3.25rem] lg:-mt-28 lg:rounded-t-[4rem]",
         "px-6 pb-20 pt-14 sm:px-10 sm:pt-16 md:px-14 md:pb-28 md:pt-20 lg:px-16 lg:pt-24",
       )}
@@ -89,10 +90,10 @@ export function IntroSection() {
               "sr-only",
             )}
           >
-            Avelion Digital
+            Daverion Digital
           </h2>
           <p className={cn(bodyClass, "text-pretty text-neutral-700")}>
-            Avelion Digital is a{" "}
+            Daverion Digital is a{" "}
             <span className="inline-flex items-center gap-1.5">
               <span className="font-semibold tracking-[-0.01em] text-[#D52B1E]">
                 swiss

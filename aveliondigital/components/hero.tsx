@@ -1,16 +1,16 @@
  "use client";
 
  import * as React from "react";
-import Link from "next/link";
  import gsap from "gsap";
 
 import { cn } from "@/lib/utils";
+import { scrollToSection } from "@/lib/smooth-scroll";
 
 import HeroWave from "@/components/dynamic-wave-canvas-background";
 
 export function Hero() {
    const rootRef = React.useRef<HTMLElement>(null);
-   const kickerRef = React.useRef<HTMLParagraphElement>(null);
+   const kickerRef = React.useRef<HTMLDivElement>(null);
    const titleRef = React.useRef<HTMLHeadingElement>(null);
    const subRef = React.useRef<HTMLParagraphElement>(null);
    const ctaRef = React.useRef<HTMLAnchorElement>(null);
@@ -89,7 +89,18 @@ export function Hero() {
          ? Array.from(titleRef.current.querySelectorAll("span"))
          : [];
 
-       const animatedEls = [kickerRef.current, ...titleLines, subRef.current, ctaRef.current];
+       const kickerAccent = kickerRef.current?.querySelector("[data-hero-kicker-accent]");
+       const kickerLines = kickerRef.current
+         ? Array.from(kickerRef.current.querySelectorAll("[data-hero-kicker-line]"))
+         : [];
+
+       const animatedEls = [
+         kickerAccent,
+         ...kickerLines,
+         ...titleLines,
+         subRef.current,
+         ctaRef.current,
+       ].filter(Boolean);
 
        /*
         * will-change promotes elements to GPU composite layers for the duration
@@ -107,10 +118,28 @@ export function Hero() {
        gsap
          .timeline({ defaults: { ease: "power3.out" } })
          .fromTo(
-           kickerRef.current,
-           { opacity: 0, y: 10, filter: "blur(6px)" },
-           { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.65 },
+           kickerAccent,
+           { scaleY: 0, opacity: 0 },
+           {
+             scaleY: 1,
+             opacity: 1,
+             duration: 0.55,
+             ease: "power2.out",
+             transformOrigin: "top center",
+           },
            0,
+         )
+         .fromTo(
+           kickerLines,
+           { opacity: 0, y: 8, filter: "blur(5px)" },
+           {
+             opacity: 1,
+             y: 0,
+             filter: "blur(0px)",
+             duration: 0.62,
+             stagger: 0.07,
+           },
+           0.05,
          )
          .fromTo(
            titleLines.length ? titleLines : titleRef.current,
@@ -163,28 +192,44 @@ export function Hero() {
           "flex flex-col items-center text-center lg:items-start lg:text-left",
         )}
       >
-       <p
+       <div
          ref={kickerRef}
-          className={cn(
-            "font-dm-sans-hero mb-4 max-w-md text-[11px] font-medium uppercase tracking-[0.24em] text-white/65 sm:mb-5 sm:text-xs",
-            "lg:max-w-none",
-          )}
+          className="mb-6 flex max-w-md items-stretch gap-3.5 sm:mb-7 lg:max-w-none"
+          aria-label="Tagline"
         >
-          WE CREATE, SO YOU CAN GROW
-        </p>
+          <span
+            data-hero-kicker-accent
+            className="w-px shrink-0 bg-gradient-to-b from-white/0 via-white/55 to-white/0"
+            aria-hidden
+          />
+          <div className="flex flex-col gap-1 text-left">
+            <span
+              data-hero-kicker-line
+              className="hero-display text-[0.8125rem] font-semibold leading-none tracking-[-0.03em] text-white sm:text-[0.9375rem]"
+            >
+              We create
+            </span>
+            <span
+              data-hero-kicker-line
+              className="hero-display text-[0.8125rem] font-normal italic leading-snug tracking-[-0.02em] text-white/48 sm:text-[0.9375rem]"
+            >
+              so you can grow
+            </span>
+          </div>
+        </div>
 
        <h1
          ref={titleRef}
           id="hero-heading"
           className={cn(
-            "hero-display mb-3 text-[clamp(2.4rem,4vw+1rem,4.25rem)] font-medium italic leading-[1.05] tracking-[-0.03em] text-white",
-            "drop-shadow-[0_2px_24px_rgba(0,0,0,0.35)]",
+            "hero-display mb-3 text-[clamp(2.5rem,4.5vw+1rem,4.75rem)] font-extrabold leading-[1.0] tracking-[-0.04em] text-white",
+            "drop-shadow-[0_2px_32px_rgba(0,0,0,0.45)]",
           )}
         >
-          <span className="hero-display block font-medium sm:whitespace-nowrap">
+          <span className="hero-display block font-extrabold sm:whitespace-nowrap">
             Premium creative &amp;
           </span>
-          <span className="hero-display mt-1 block font-medium sm:mt-1.5">
+          <span className="hero-display mt-1 block font-extrabold sm:mt-1.5">
             tech agency
           </span>
         </h1>
@@ -198,9 +243,9 @@ export function Hero() {
           Apps | Websites | Marketing &amp; Ads | E-Commerce
         </p>
 
-       <Link
+       <a
          ref={ctaRef}
-          href="#kontakt"
+          href="#contact"
           className={cn(
             "font-dm-sans-hero group relative inline-flex max-w-full rounded-full",
             // modern idle: softer ring + inset highlight (statt „harte“ Border)
@@ -224,6 +269,10 @@ export function Hero() {
           onPointerMove={onCtaPointerMove}
           onPointerEnter={onCtaPointerEnter}
           onPointerLeave={onCtaPointerLeave}
+          onClick={(e) => {
+            e.preventDefault();
+            scrollToSection("contact");
+          }}
         >
           <span
             ref={ctaFillRef}
@@ -239,7 +288,7 @@ export function Hero() {
             aria-hidden
           />
           <span className="relative z-10 truncate">LET&apos;S TALK</span>
-        </Link>
+        </a>
       </div>
     </section>
   );

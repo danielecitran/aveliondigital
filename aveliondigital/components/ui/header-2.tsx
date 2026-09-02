@@ -7,13 +7,14 @@ import gsap from "gsap";
 import { HeaderLogoAnimatedSvg } from "@/components/header-logo-animated-svg";
 import { MenuToggleIcon } from "@/components/menu-toggle-icon";
 import { useScroll } from "@/components/use-scroll";
+import { scrollToSection } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { label: "Work", href: "#work" },
-  { label: "Services", href: "#services" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#kontakt" },
+  { label: "About", sectionId: "about" },
+  { label: "Services", sectionId: "services" },
+  { label: "Our Work", sectionId: "work" },
+  { label: "Contact", sectionId: "contact" },
 ] as const;
 
 export function Header() {
@@ -76,6 +77,15 @@ export function Header() {
     };
   }, [open]);
 
+  const onNavClick = React.useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+      e.preventDefault();
+      scrollToSection(sectionId);
+      setOpen(false);
+    },
+    [],
+  );
+
   const linkClass = cn(
     "font-dm-sans-hero text-[11px] font-medium uppercase tracking-[0.2em] text-white/68 sm:text-xs sm:tracking-[0.22em]",
     "rounded-full px-3 py-2 transition-colors duration-300 hover:text-white",
@@ -119,14 +129,15 @@ export function Header() {
 
             <div className="hidden items-center gap-0.5 md:flex">
               {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
+                <a
+                  key={link.sectionId}
+                  href={`#${link.sectionId}`}
                   className={linkClass}
                   data-header-link
+                  onClick={(e) => onNavClick(e, link.sectionId)}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </div>
 
@@ -172,17 +183,17 @@ export function Header() {
             aria-label="Mobile Navigation"
           >
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
+              <a
+                key={link.sectionId}
+                href={`#${link.sectionId}`}
                 className={cn(
                   linkClass,
                   "block rounded-xl px-4 py-3.5 text-left text-[12px] tracking-[0.18em] hover:bg-white/[0.06]",
                 )}
-                onClick={() => setOpen(false)}
+                onClick={(e) => onNavClick(e, link.sectionId)}
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
           </nav>
         </div>

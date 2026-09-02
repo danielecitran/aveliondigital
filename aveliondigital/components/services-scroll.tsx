@@ -36,6 +36,54 @@ const TOTAL = SERVICES.length;
 // Longest title lines — used by the invisible spacer to size the overflow:hidden wrapper.
 const LONGEST_TITLE = ["Web Design &", "Development"] as const;
 
+const SERVICE_TITLE_STYLE = {
+  fontSize: "clamp(2.15rem, 4.2vw, 5.5rem)",
+  lineHeight: 1.04,
+  letterSpacing: "-0.03em",
+} as const;
+
+const SERVICE_NUM_STYLE = {
+  fontSize: "clamp(8.5rem, 19vw, 25rem)",
+  letterSpacing: "-0.04em",
+  lineHeight: 0.92,
+} as const;
+
+/** Scroll progress 0→1 maps to (TOTAL−1) snap segments; 4 ticks split the last segment in half. */
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function getScrollScaled(progress: number) {
+  return progress * (TOTAL - 1);
+}
+
+function getServiceIndex(progress: number) {
+  if (progress >= 1) return TOTAL - 1;
+  const scaled = getScrollScaled(progress);
+  if (scaled < 1) return 0;
+  if (scaled < 2) return 1;
+  if (scaled < 2.5) return 2;
+  return TOTAL - 1;
+}
+
+function getTickFill(tickIndex: number, progress: number) {
+  const scaled = getScrollScaled(progress);
+  if (tickIndex < TOTAL - 2) {
+    return clamp01(scaled - tickIndex);
+  }
+  if (tickIndex === TOTAL - 2) {
+    return clamp01((scaled - 2) * 2);
+  }
+  return clamp01((scaled - 2.5) * 2);
+}
+
+function getActiveTickIndex(progress: number) {
+  for (let i = 0; i < TOTAL; i++) {
+    if (getTickFill(i, progress) < 0.999) return i;
+  }
+  return TOTAL - 1;
+}
+
 function WaveBottom({ className }: { className?: string }) {
   return (
     <svg
@@ -65,7 +113,8 @@ export function ServicesScroll() {
   const titleRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const descRefs  = React.useRef<(HTMLDivElement | null)[]>([]);
   const numRefs   = React.useRef<(HTMLSpanElement | null)[]>([]);
-  const tickRefs  = React.useRef<(HTMLSpanElement | null)[]>([]);
+  const tickFillRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
+  const tickTrackRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
 
   const currentIdxRef = React.useRef(0);
 
@@ -95,13 +144,88 @@ export function ServicesScroll() {
     numRefs.current.forEach((el, i) =>
       el && gsap.set(el, { opacity: i === 0 ? 0.055 : 0 }),
     );
-    tickRefs.current.forEach((el, i) =>
-      el &&
+
+    const activeTickRef = { current: 0 };
+    const handoffTlRef = { current: null as gsap.core.Timeline | null };
+    const tickQuickTos: Array<((value: number) => void) | null> = [];
+
+    tickTrackRefs.current.forEach((track) => {
+      if (!track) return;
+      gsap.set(track, {
+        scale: 1,
+        y: 0,
+        transformOrigin: "left center",
+        force3D: true,
+      });
+    });
+
+    tickFillRefs.current.forEach((el, i) => {
+      if (!el) return;
       gsap.set(el, {
-        width: i === 0 ? 36 : 16,
-        backgroundColor: i === 0 ? "rgb(23 23 23)" : "rgb(212 212 212)",
-      }),
-    );
+        scaleX: getTickFill(i, 0),
+        force3D: true,
+        transformOrigin: "left center",
+      });
+      if (!reduced) {
+        tickQuickTos[i] = gsap.quickTo(el, "scaleX", {
+          duration: 0.2,
+          ease: "power1.out",
+        });
+      }
+    });
+
+    function animateTickHandoff(from: number, to: number) {
+      if (reduced || from === to) return;
+
+      handoffTlRef.current?.kill();
+
+      const prevTrack = tickTrackRefs.current[from];
+      if (prevTrack) {
+        gsap.killTweensOf(prevTrack);
+        gsap.set(prevTrack, { scale: 1, y: 0 });
+      }
+
+      const nextTrack = tickTrackRefs.current[to];
+      if (!nextTrack) return;
+
+      gsap.killTweensOf(nextTrack);
+      gsap.set(nextTrack, { scale: 1, y: 0, transformOrigin: "left center" });
+
+      handoffTlRef.current = gsap
+        .timeline()
+        .to(nextTrack, {
+          scale: 1.07,
+          y: -1.5,
+          duration: 0.2,
+          ease: "power1.out",
+        })
+        .to(nextTrack, {
+          scale: 1,
+          y: 0,
+          duration: 0.28,
+          ease: "power2.out",
+        });
+    }
+
+    function updateTickProgress(progress: number) {
+      const active = getActiveTickIndex(progress);
+      if (active !== activeTickRef.current) {
+        animateTickHandoff(activeTickRef.current, active);
+        activeTickRef.current = active;
+      }
+
+      tickFillRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const fill = getTickFill(i, progress);
+        if (reduced) {
+          gsap.set(el, { scaleX: fill, force3D: true });
+          return;
+        }
+        tickQuickTos[i]?.(fill);
+      });
+    }
+
+    updateTickProgress(0);
 
     // ── Animate between two service indices ─────────────────────────────────
     function animateToService(from: number, to: number) {
@@ -113,7 +237,6 @@ export function ServicesScroll() {
         ...titleRefs.current,
         ...descRefs.current,
         ...numRefs.current,
-        ...tickRefs.current,
       ].forEach((el) => el && gsap.killTweensOf(el));
 
       const tl = gsap.timeline();
@@ -136,18 +259,6 @@ export function ServicesScroll() {
       tl.to(numRefs.current[from], { opacity: 0,     duration: 0.28 }, 0);
       tl.to(numRefs.current[to],   { opacity: 0.055, duration: 0.32 }, 0.16);
 
-      tickRefs.current.forEach((el, i) => {
-        if (!el) return;
-        tl.to(
-          el,
-          {
-            width: i === to ? 36 : 16,
-            backgroundColor: i === to ? "rgb(23 23 23)" : "rgb(212 212 212)",
-            duration: 0.28,
-          },
-          0.08,
-        );
-      });
     }
 
     // ── ScrollTrigger: pin + snap ────────────────────────────────────────────
@@ -171,15 +282,15 @@ export function ServicesScroll() {
           delay: 0.05,
         },
         invalidateOnRefresh: true,
-        onUpdate: reduced
-          ? undefined
-          : (self) => {
-              const newIdx = Math.round(self.progress * (TOTAL - 1));
-              if (newIdx !== currentIdxRef.current) {
-                animateToService(currentIdxRef.current, newIdx);
-                currentIdxRef.current = newIdx;
-              }
-            },
+        onUpdate: (self) => {
+          updateTickProgress(self.progress);
+          if (reduced) return;
+          const newIdx = getServiceIndex(self.progress);
+          if (newIdx !== currentIdxRef.current) {
+            animateToService(currentIdxRef.current, newIdx);
+            currentIdxRef.current = newIdx;
+          }
+        },
       });
     }, outer);
 
@@ -187,7 +298,12 @@ export function ServicesScroll() {
   }, []);
 
   return (
-    <div ref={outerRef} className="bg-neutral-100" aria-label="Our services">
+    <div
+      ref={outerRef}
+      id="services"
+      className="scroll-mt-[5.5rem] bg-neutral-100"
+      aria-label="Our services"
+    >
       <div
         ref={stageRef}
         className="relative flex w-full flex-col overflow-hidden bg-neutral-100 will-change-transform"
@@ -239,76 +355,73 @@ export function ServicesScroll() {
         </div>
 
         {/* ── Max-width content wrapper ────────────────────────────────────── */}
-        <div className="relative mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col justify-center px-6 pb-0 sm:px-10 lg:px-16 lg:pb-[8vh]">
+        <div className="relative mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col justify-center px-6 pb-0 sm:px-10 lg:px-16 lg:pb-[6vh]">
 
-          {/* Background numbers — sit behind the description column */}
-          <div
-            className="pointer-events-none absolute inset-0 select-none overflow-hidden"
-            aria-hidden
-          >
-            {SERVICES.map((s, i) => (
-              <span
-                key={s.num}
-                ref={(el) => { numRefs.current[i] = el; }}
-                className="absolute right-0 top-[38%] -translate-y-1/2 will-change-[opacity] font-playfair font-medium italic leading-none text-neutral-950 lg:top-[36%]"
-                style={{ fontSize: "clamp(10rem, 28vw, 34rem)", letterSpacing: "-0.04em" }}
-              >
-                {s.num}
-              </span>
-            ))}
-          </div>
-
-          {/* ── 12-col editorial grid ───────────────────────────────────────── */}
-          <div className="relative grid grid-cols-1 items-end gap-y-8 lg:grid-cols-12 lg:gap-x-10 xl:gap-x-14">
-
-            {/* Title column */}
-            <div className="relative overflow-hidden will-change-transform lg:col-span-7">
-              {/* Ghost spacer sets wrapper height */}
-              <div className="pointer-events-none select-none opacity-0" aria-hidden>
-                <h2
-                  className="font-playfair font-medium italic leading-[0.93] tracking-[-0.035em]"
-                  style={{ fontSize: "clamp(2.8rem, 6.5vw, 8rem)" }}
-                >
-                  {LONGEST_TITLE.map((line, li) => (
-                    <span key={li} className="block">{line}</span>
-                  ))}
-                </h2>
-              </div>
-
+          {/* Content band — number + title/description share one vertical axis */}
+          <div className="relative py-2 sm:py-4 lg:py-6">
+            <div
+              className="pointer-events-none absolute inset-0 select-none overflow-x-clip"
+              aria-hidden
+            >
               {SERVICES.map((s, i) => (
-                <div
+                <span
                   key={s.num}
-                  ref={(el) => { titleRefs.current[i] = el; }}
-                  className="absolute inset-0 flex items-end will-change-transform"
+                  ref={(el) => { numRefs.current[i] = el; }}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 will-change-[opacity] font-playfair font-medium italic text-neutral-950 lg:right-[-0.5%]"
+                  style={SERVICE_NUM_STYLE}
                 >
-                  <h2
-                    className="font-playfair font-medium italic leading-[0.93] tracking-[-0.035em] text-neutral-950"
-                    style={{ fontSize: "clamp(2.8rem, 6.5vw, 8rem)" }}
-                  >
-                    {s.title.map((line, li) => (
-                      <span key={li} className="block">{line}</span>
-                    ))}
-                  </h2>
-                </div>
+                  {s.num}
+                </span>
               ))}
             </div>
 
-            {/* Description column */}
-            <div className="relative lg:col-span-5 lg:pb-[0.4em]">
-              {SERVICES.map((s, i) => (
-                <div
-                  key={s.num}
-                  ref={(el) => { descRefs.current[i] = el; }}
-                  className={i > 0 ? "absolute inset-0" : undefined}
-                >
-                  <p className="font-dm-sans-hero text-[14px] leading-[1.82] text-neutral-500 sm:text-[15px] lg:text-base">
-                    {s.body}
-                  </p>
-                  <p className="font-dm-sans-hero mt-4 text-[10px] font-medium uppercase tracking-[0.3em] text-neutral-400 sm:text-[11px]">
-                    {s.hint}
-                  </p>
+            <div className="relative grid grid-cols-1 gap-y-10 lg:grid-cols-12 lg:items-center lg:gap-x-7 xl:gap-x-9">
+
+              {/* Title column — overflow-y clips slide animation */}
+              <div className="relative overflow-x-visible overflow-y-hidden will-change-transform lg:col-span-7">
+                <div className="pointer-events-none select-none opacity-0" aria-hidden>
+                  <h2 className="font-playfair font-medium italic" style={SERVICE_TITLE_STYLE}>
+                    {LONGEST_TITLE.map((line, li) => (
+                      <span key={li} className="block pr-[0.05em]">{line}</span>
+                    ))}
+                  </h2>
                 </div>
-              ))}
+
+                {SERVICES.map((s, i) => (
+                  <div
+                    key={s.num}
+                    ref={(el) => { titleRefs.current[i] = el; }}
+                    className="absolute inset-0 flex items-center will-change-transform"
+                  >
+                    <h2
+                      className="font-playfair font-medium italic text-neutral-950"
+                      style={SERVICE_TITLE_STYLE}
+                    >
+                      {s.title.map((line, li) => (
+                        <span key={li} className="block pr-[0.05em]">{line}</span>
+                      ))}
+                    </h2>
+                  </div>
+                ))}
+              </div>
+
+              {/* Description column — sits above the background number */}
+              <div className="relative z-10 lg:col-span-5">
+                {SERVICES.map((s, i) => (
+                  <div
+                    key={s.num}
+                    ref={(el) => { descRefs.current[i] = el; }}
+                    className={i > 0 ? "absolute inset-0 flex flex-col justify-center" : "flex flex-col justify-center"}
+                  >
+                    <p className="font-dm-sans-hero max-w-[22rem] text-[14px] leading-[1.82] text-neutral-500 sm:text-[15px] lg:max-w-none lg:text-base">
+                      {s.body}
+                    </p>
+                    <p className="font-dm-sans-hero mt-4 text-[10px] font-medium uppercase tracking-[0.3em] text-neutral-400 sm:text-[11px]">
+                      {s.hint}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -320,15 +433,29 @@ export function ServicesScroll() {
             />
           </div>
 
-          {/* Progress ticks */}
-          <div className="mt-8 flex items-center gap-2.5 lg:mt-10">
+          {/* Scroll progress — one segment per service, fills smoothly toward the next */}
+          <div
+            className="mt-8 flex items-center gap-3 lg:mt-10"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={TOTAL}
+            aria-label="Service scroll progress"
+          >
             {SERVICES.map((_, di) => (
               <span
                 key={di}
-                ref={(el) => { tickRefs.current[di] = el; }}
-                className="block h-px rounded-full"
-                style={{ width: 16, backgroundColor: "rgb(212 212 212)" }}
-              />
+                ref={(el) => { tickTrackRefs.current[di] = el; }}
+                className="relative inline-block h-[2px] w-11 origin-left will-change-transform sm:h-[3px] sm:w-12"
+              >
+                <span
+                  className="absolute inset-0 rounded-full bg-neutral-400/80"
+                  aria-hidden
+                />
+                <span
+                  ref={(el) => { tickFillRefs.current[di] = el; }}
+                  className="absolute inset-0 origin-left rounded-full bg-neutral-900 will-change-transform"
+                />
+              </span>
             ))}
           </div>
         </div>

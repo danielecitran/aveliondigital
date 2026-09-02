@@ -9,7 +9,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "@/lib/utils";
 
 type Project = {
-  id: "tradelens" | "quizgpt";
+  id: string;
+  index: string;
   category: string;
   year: string;
   title: string;
@@ -17,44 +18,33 @@ type Project = {
   description: string;
   tags: readonly string[];
   icon: string;
+  preview: { type: "video"; src: string } | { type: "image"; src: string; alt: string };
   primaryCta: { label: string; href: string };
-  secondaryCta: { label: string; href: string };
+  secondaryCta?: { label: string; href: string };
 };
 
 const PROJECTS: readonly Project[] = [
   {
     id: "tradelens",
+    index: "01",
     category: "iOS Application",
     year: "2026",
     title: "TradeLens",
     subtitle: "Chart Analysis",
     description:
-      "A native iOS app that turns any chart screenshot into a clear, AI-powered trading analysis. Built for traders who need institutional-grade insight in seconds — not hours.",
-    tags: ["iOS Native", "AI Vision", "SwiftUI", "Fintech"],
+      "An iOS app that turns any chart screenshot into a clear, AI-powered trading analysis. Built for traders who need institutional-grade insight in seconds.",
+    tags: ["iOS", "AI Vision", "React Native"],
     icon: "/brand/tradelens-chart-analysis.png",
+    preview: { type: "video", src: "/vid/mockup1.mp4" },
     primaryCta: {
-      label: "View on App Store",
+      label: "View on Apple App Store",
       href: "https://apps.apple.com/app/id6753321240",
     },
-    secondaryCta: { label: "Read case study", href: "#" },
-  },
-  {
-    id: "quizgpt",
-    category: "Chrome Extension",
-    year: "2025",
-    title: "QuizGPT",
-    subtitle: "Kahoot Auto Answer",
-    description:
-      "The most advanced Kahoot assistant on the market. An AI-powered browser extension that reads questions in real-time and delivers the correct answer — already used by thousands of students worldwide.",
-    tags: ["Chrome Extension", "AI", "Real-time", "EdTech"],
-    icon: "/brand/QuizGPT.png",
-    primaryCta: { label: "Visit quizgpt.site", href: "https://quizgpt.site/" },
-    secondaryCta: { label: "Read case study", href: "#" },
   },
 ];
 
 // ────────────────────────────────────────────────────────────────────────────
-// Ink-fill primary CTA — matches hero styling
+// CTAs — ink-fill primary matches hero
 // ────────────────────────────────────────────────────────────────────────────
 function PrimaryCta({ href, label }: { href: string; label: string }) {
   const fillRef = React.useRef<HTMLSpanElement>(null);
@@ -181,144 +171,312 @@ function SecondaryCta({ href, label }: { href: string; label: string }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// TradeLens preview — raw mockup video + floating app icon
+// Cinematic preview stage
 // ────────────────────────────────────────────────────────────────────────────
-function TradeLensPreview({ paused }: { paused: boolean }) {
+function ProjectPreview({
+  project,
+  paused,
+}: {
+  project: Project;
+  paused: boolean;
+}) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v || project.preview.type !== "video") return;
     if (paused) {
       v.pause();
     } else {
-      v.play().catch(() => {
-        /* autoplay is muted; rare to be blocked */
-      });
+      v.play().catch(() => undefined);
     }
-  }, [paused]);
+  }, [paused, project.preview]);
 
   return (
-    <div className="relative mx-auto flex items-center justify-center">
-      {/* soft glow behind the device */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 scale-[1.15] blur-2xl"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(55% 55% at 50% 50%, rgba(255,255,255,0.14), transparent 70%)",
-        }}
-      />
+    <div className="relative mx-auto flex w-full max-w-[52rem] justify-center">
+      <div className="relative inline-block max-w-full">
+        {/*
+         * Nur ein hauchdünner Kanten-Glow — negativer Spread, kein Rechteck-Halo.
+         */}
+        <div
+          className="overflow-hidden rounded-[1.25rem] sm:rounded-[1.4rem]"
+          style={{
+            boxShadow: "0 0 20px -13px rgba(59,130,246,0.28)",
+          }}
+        >
+          {project.preview.type === "video" ? (
+            <video
+              ref={videoRef}
+              className="block h-auto max-h-[min(68vh,560px)] w-auto max-w-full"
+              src={project.preview.src}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-label={`${project.title} product preview`}
+            />
+          ) : (
+            <Image
+              src={project.preview.src}
+              alt={project.preview.alt}
+              width={1200}
+              height={800}
+              className="block h-auto max-h-[min(68vh,560px)] w-auto max-w-full object-contain"
+            />
+          )}
+        </div>
 
-      <video
-        ref={videoRef}
-        className="block h-auto max-h-[640px] w-auto max-w-full drop-shadow-[0_40px_80px_rgba(0,0,0,0.55)]"
-        src="/vid/mockup1.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-hidden
-      />
-
-      {/* Floating app-icon — alone, no text */}
-      <div
-        className={cn(
-          "absolute -bottom-2 right-2 size-[72px] overflow-hidden rounded-[1.35rem] sm:-bottom-3 sm:right-3 sm:size-[80px]",
-          "ring-1 ring-white/15",
-          "shadow-[0_30px_60px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
-        )}
-      >
-        <Image
-          src="/brand/tradelens-chart-analysis.png"
-          alt="TradeLens"
-          fill
-          className="object-cover"
-          sizes="80px"
-          priority
-        />
+        {/* floating app icon */}
+        <div
+          className={cn(
+            "absolute -bottom-3 -right-2 z-10 size-[4.25rem] overflow-hidden rounded-[1.15rem] sm:-bottom-4 sm:-right-3 sm:size-[4.75rem]",
+            "ring-1 ring-white/12",
+            "shadow-[0_28px_56px_-14px_rgba(0,0,0,0.75)]",
+          )}
+        >
+          <Image
+            src={project.icon}
+            alt={project.title}
+            fill
+            className="object-cover"
+            sizes="76px"
+          />
+        </div>
       </div>
     </div>
   );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// QuizGPT preview — minimal Chrome-extension popup
+// Single project showcase — stacked vertically when multiple exist
 // ────────────────────────────────────────────────────────────────────────────
-function QuizGPTPreview() {
+function ProjectShowcase({
+  project,
+  position,
+  isLast,
+}: {
+  project: Project;
+  position: number;
+  isLast: boolean;
+}) {
+  const articleRef = React.useRef<HTMLElement>(null);
+  const metaRef = React.useRef<HTMLDivElement>(null);
+  const titleRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  const previewRef = React.useRef<HTMLDivElement>(null);
+  const indexRef = React.useRef<HTMLSpanElement>(null);
+
+  const [previewPaused, setPreviewPaused] = React.useState(true);
+  const reversed = position % 2 === 1;
+
+  React.useLayoutEffect(() => {
+    const article = articleRef.current;
+    if (!article) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches;
+
+    if (reduced) {
+      if (indexRef.current) {
+        gsap.set(indexRef.current, { opacity: 1 });
+      }
+      setPreviewPaused(false);
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const revealTargets = [
+        metaRef.current,
+        titleRef.current,
+        bodyRef.current,
+        previewRef.current,
+      ].filter(Boolean) as Element[];
+
+      gsap.set(revealTargets, { opacity: 0, y: 32 });
+      gsap.set(indexRef.current, { opacity: 0, x: reversed ? 24 : -24 });
+      gsap.set(previewRef.current, { scale: 0.96 });
+
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: article,
+            start: "top 82%",
+            once: true,
+          },
+          onComplete: () => setPreviewPaused(false),
+        })
+        .to(indexRef.current, {
+          opacity: 1,
+          x: 0,
+          duration: 1.1,
+          ease: "power3.out",
+        })
+        .to(
+          metaRef.current,
+          { opacity: 1, y: 0, duration: 0.75, ease: "power3.out" },
+          0.08,
+        )
+        .to(
+          titleRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.85,
+            ease: "power3.out",
+            filter: "blur(0px)",
+          },
+          0.14,
+        )
+        .to(
+          bodyRef.current,
+          { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
+          0.22,
+        )
+        .to(
+          previewRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 1,
+            ease: "power3.out",
+          },
+          0.12,
+        );
+
+      ScrollTrigger.create({
+        trigger: article,
+        start: "top 90%",
+        end: "bottom 10%",
+        onEnter: () => setPreviewPaused(false),
+        onLeave: () => setPreviewPaused(true),
+        onEnterBack: () => setPreviewPaused(false),
+        onLeaveBack: () => setPreviewPaused(true),
+      });
+    }, article);
+
+    return () => ctx.revert();
+  }, [reversed]);
+
   return (
-    <div className="relative mx-auto w-[min(84vw,380px)] sm:w-[380px] lg:w-[400px]">
-      {/* glow */}
-      <div
-        className="pointer-events-none absolute -inset-[14%] -z-10 rounded-full"
-        aria-hidden
+    <article
+      ref={articleRef}
+      aria-labelledby={`project-${project.id}-title`}
+      className={cn(
+        "relative overflow-visible",
+        !isLast && "pb-24 sm:pb-28 lg:pb-36",
+      )}
+    >
+      {/* ghost index — obere Hälfte sichtbar, untere weich ausgeblendet, dezent grau */}
+      <span
+        ref={indexRef}
+        className={cn(
+          "pointer-events-none absolute z-0 select-none font-playfair font-medium italic",
+          reversed ? "right-0 lg:right-[-2%]" : "left-0 lg:left-[-2%]",
+          "-top-4 sm:-top-6",
+        )}
         style={{
-          background:
-            "radial-gradient(55% 55% at 50% 40%, rgba(229,57,53,0.18), transparent 70%)",
+          fontSize: "clamp(7rem, 18vw, 22rem)",
+          letterSpacing: "-0.04em",
+          lineHeight: 0.9,
+          color: "#fff",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
+          maskImage:
+            "linear-gradient(to bottom, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0.075) 44%, transparent 86%)",
         }}
-      />
+        aria-hidden
+      >
+        {project.index}
+      </span>
 
       <div
         className={cn(
-          "relative overflow-hidden rounded-[1.4rem] bg-[#0b0b0f]",
-          "border border-white/10",
-          "shadow-[0_50px_100px_-28px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
+          "relative z-[1] grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-x-14 xl:gap-x-16",
+          reversed && "lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1",
         )}
       >
-        {/* Top bar */}
-        <div className="flex items-center gap-1.5 border-b border-white/[0.06] bg-white/[0.02] px-4 py-3">
-          <span className="size-2.5 rounded-full bg-[#ff5f57]" aria-hidden />
-          <span className="size-2.5 rounded-full bg-[#ffbd2e]" aria-hidden />
-          <span className="size-2.5 rounded-full bg-[#28c840]" aria-hidden />
-          <div className="ml-3 flex-1 rounded-full bg-white/[0.04] px-3 py-1 ring-1 ring-inset ring-white/[0.04]">
-            <p className="font-dm-sans-hero truncate text-[10px] tracking-[0.04em] text-white/45">
-              chrome-extension://quizgpt
+        {/* copy column */}
+        <div className="relative z-10 lg:col-span-5">
+          <div ref={metaRef} className="flex items-stretch gap-3.5">
+            <span
+              className="w-px shrink-0 bg-gradient-to-b from-white/0 via-white/45 to-white/0"
+              aria-hidden
+            />
+            <div>
+              <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/50 sm:text-[11px]">
+                {project.category}
+              </p>
+              <p className="mt-1 font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.3em] text-white/30">
+                {project.year}
+              </p>
+            </div>
+          </div>
+
+          <div ref={titleRef} className="mt-8 sm:mt-10">
+            <h3
+              id={`project-${project.id}-title`}
+              className="hero-display font-semibold leading-[0.98] tracking-[-0.03em] text-white"
+              style={{ fontSize: "clamp(2.4rem, 4.8vw, 4.5rem)" }}
+            >
+              {project.title}
+            </h3>
+            <p
+              className="mt-3 font-dm-sans-hero font-medium tracking-[-0.02em] text-white/55"
+              style={{ fontSize: "clamp(1rem, 1.5vw, 1.35rem)" }}
+            >
+              {project.subtitle}
             </p>
+          </div>
+
+          <div ref={bodyRef}>
+            <p className="mt-7 max-w-[32rem] font-dm-sans-hero text-[14px] leading-[1.88] text-white/62 sm:mt-8 sm:text-[15px] lg:text-base">
+              {project.description}
+            </p>
+
+            <ul className="mt-7 flex flex-wrap gap-2 sm:mt-8">
+              {project.tags.map((tag) => (
+                <li
+                  key={tag}
+                  className="font-dm-sans-hero rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-white/55 sm:text-[11px]"
+                >
+                  {tag}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4 sm:mt-10">
+              <PrimaryCta
+                href={project.primaryCta.href}
+                label={project.primaryCta.label}
+              />
+              {project.secondaryCta && project.secondaryCta.href !== "#" ? (
+                <SecondaryCta
+                  href={project.secondaryCta.href}
+                  label={project.secondaryCta.label}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
 
-        {/* Body — minimal splash */}
-        <div className="relative flex flex-col items-center px-7 pb-9 pt-11 sm:px-8 sm:pt-12">
-          <div className="relative size-[76px] overflow-hidden rounded-[1.35rem] ring-1 ring-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
-            <Image
-              src="/brand/QuizGPT.png"
-              alt=""
-              fill
-              className="object-cover"
-              sizes="76px"
-            />
-          </div>
-
-          <p className="mt-6 font-dm-sans-hero text-xl font-semibold tracking-[-0.015em] text-white">
-            QuizGPT
-          </p>
-          <p className="mt-1.5 font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.28em] text-white/45">
-            Kahoot Auto Answer
-          </p>
-
-          <div className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-neutral-950">
-            <svg
-              className="size-3"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              aria-hidden
-            >
-              <path
-                d="M4 3l9 5-9 5V3z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <p className="font-dm-sans-hero text-[11px] font-semibold uppercase tracking-[0.24em]">
-              Start auto-answer
-            </p>
-          </div>
+        {/* preview column */}
+        <div ref={previewRef} className="relative lg:col-span-7">
+          <ProjectPreview project={project} paused={previewPaused} />
         </div>
       </div>
-    </div>
+
+      {!isLast ? (
+        <div className="relative mt-24 h-px w-full sm:mt-28 lg:mt-36">
+          <div
+            className="absolute inset-y-0 left-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-white/18 to-transparent"
+            style={{ width: "min(100%, 56rem)" }}
+          />
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -328,17 +486,7 @@ function QuizGPTPreview() {
 export function PortfolioSection() {
   const sectionRef = React.useRef<HTMLElement>(null);
   const headerRef = React.useRef<HTMLDivElement>(null);
-  const selectorRef = React.useRef<HTMLDivElement>(null);
 
-  const infoRefs = React.useRef<(HTMLDivElement | null)[]>([]);
-  const previewRefs = React.useRef<(HTMLDivElement | null)[]>([]);
-  const floatRefs = React.useRef<(HTMLDivElement | null)[]>([]);
-  const tabTickRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
-
-  const [active, setActive] = React.useState(0);
-  const lastActive = React.useRef(0);
-
-  // ─── Initial states + scroll-in reveal + idle float ────────────────────────
   React.useLayoutEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
@@ -346,166 +494,50 @@ export function PortfolioSection() {
     gsap.registerPlugin(ScrollTrigger);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
       .matches;
-
-    infoRefs.current.forEach((el, i) => {
-      if (!el) return;
-      gsap.set(el, { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 18 });
-    });
-    previewRefs.current.forEach((el, i) => {
-      if (!el) return;
-      gsap.set(el, {
-        opacity: i === 0 ? 1 : 0,
-        y: i === 0 ? 0 : 18,
-        scale: i === 0 ? 1 : 0.985,
-      });
-    });
-    tabTickRefs.current.forEach((el, i) => {
-      if (!el) return;
-      gsap.set(el, {
-        width: i === 0 ? 44 : 14,
-        backgroundColor:
-          i === 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.22)",
-      });
-    });
-
-    if (reduced) return;
+    if (reduced || !headerRef.current) return;
 
     const ctx = gsap.context(() => {
-      gsap.from(
-        [
-          headerRef.current,
-          selectorRef.current,
-          previewRefs.current[0],
-          infoRefs.current[0],
-        ].filter(Boolean) as Element[],
-        {
-          scrollTrigger: {
-            trigger: section,
-            start: "top 78%",
-            once: true,
-          },
-          y: 36,
-          opacity: 0,
-          duration: 0.95,
-          ease: "power3.out",
-          stagger: 0.08,
+      gsap.from(headerRef.current, {
+        scrollTrigger: {
+          trigger: section,
+          start: "top 78%",
+          once: true,
         },
-      );
-
-      floatRefs.current.forEach((el, i) => {
-        if (!el) return;
-        // TradeLens (index 0) shows a real mockup video — keep it rock-steady.
-        if (PROJECTS[i]?.id === "tradelens") return;
-        gsap.to(el, {
-          y: i % 2 === 0 ? "+=10" : "+=8",
-          duration: 4.2 + i * 0.3,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-        });
+        y: 40,
+        opacity: 0,
+        filter: "blur(8px)",
+        duration: 1,
+        ease: "power3.out",
+        clearProps: "filter",
       });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
-  // ─── Switch animation ─────────────────────────────────────────────────────
-  const animateTo = React.useCallback((to: number) => {
-    const from = lastActive.current;
-    if (from === to) return;
-    lastActive.current = to;
-    setActive(to);
-
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduced) {
-      infoRefs.current.forEach((el, i) =>
-        el ? gsap.set(el, { opacity: i === to ? 1 : 0 }) : undefined,
-      );
-      previewRefs.current.forEach((el, i) =>
-        el ? gsap.set(el, { opacity: i === to ? 1 : 0 }) : undefined,
-      );
-      tabTickRefs.current.forEach((el, i) =>
-        el
-          ? gsap.set(el, {
-              width: i === to ? 44 : 14,
-              backgroundColor:
-                i === to
-                  ? "rgba(255,255,255,0.85)"
-                  : "rgba(255,255,255,0.22)",
-            })
-          : undefined,
-      );
-      return;
-    }
-
-    const targets = [
-      ...infoRefs.current,
-      ...previewRefs.current,
-      ...tabTickRefs.current,
-    ];
-    targets.forEach((el) => el && gsap.killTweensOf(el));
-
-    const tl = gsap.timeline();
-
-    tl.to(
-      [infoRefs.current[from], previewRefs.current[from]].filter(
-        Boolean,
-      ) as Element[],
-      { opacity: 0, y: -14, duration: 0.36, ease: "power2.inOut" },
-      0,
-    );
-
-    tl.fromTo(
-      [infoRefs.current[to], previewRefs.current[to]].filter(
-        Boolean,
-      ) as Element[],
-      { opacity: 0, y: 20 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.7,
-        ease: "power3.out",
-        stagger: 0.04,
-      },
-      0.26,
-    );
-
-    tabTickRefs.current.forEach((el, i) => {
-      if (!el) return;
-      tl.to(
-        el,
-        {
-          width: i === to ? 44 : 14,
-          backgroundColor:
-            i === to ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.22)",
-          duration: 0.36,
-          ease: "power3.out",
-        },
-        0.05,
-      );
-    });
-  }, []);
-
   return (
     <section
+      id="work"
       ref={sectionRef}
       aria-labelledby="portfolio-title"
-      className="relative z-20 -mt-px overflow-hidden bg-black text-white"
+      className="relative z-20 -mt-px scroll-mt-[5.5rem] overflow-x-clip bg-[#050508] text-white"
     >
-      {/* background grain + radial washes */}
+      {/* top fade from services wave */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.55]"
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black to-transparent sm:h-32"
+        aria-hidden
+      />
+
+      {/* atmospheric background */}
+      <div
+        className="pointer-events-none absolute inset-0"
         aria-hidden
         style={{
           backgroundImage:
-            "radial-gradient(circle at 18% 8%, rgba(255,255,255,0.08), transparent 52%)," +
-            "radial-gradient(circle at 86% 42%, rgba(255,255,255,0.06), transparent 48%)," +
-            "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
-          backgroundSize: "auto, auto, 26px 26px",
-          backgroundPosition: "0 0, 0 0, 0 0",
+            "radial-gradient(circle at 14% 6%, rgba(255,255,255,0.07), transparent 48%)," +
+            "radial-gradient(circle at 88% 28%, rgba(255,255,255,0.05), transparent 44%)," +
+            "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundSize: "auto, auto, 28px 28px",
         }}
       />
       <div
@@ -513,222 +545,42 @@ export function PortfolioSection() {
         aria-hidden
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 120%, rgba(0,0,0,0.9), transparent 60%)",
+            "radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0,0,0,0.85), transparent 65%)",
         }}
       />
 
-      <div className="relative mx-auto w-full max-w-[1440px] px-6 pb-24 pt-20 sm:px-10 sm:pb-28 sm:pt-24 lg:px-16 lg:pb-32 lg:pt-28">
-        {/* Header */}
-        <div ref={headerRef} className="max-w-3xl">
-          <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/60 sm:text-[11px]">
+      <div className="relative mx-auto w-full max-w-[1440px] px-6 pb-28 pt-24 sm:px-10 sm:pb-32 sm:pt-28 lg:px-16 lg:pb-40 lg:pt-32">
+        {/* header */}
+        <div ref={headerRef} className="mx-auto max-w-3xl text-center">
+          <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/55 sm:text-[11px]">
             Portfolio
           </p>
           <h2
             id="portfolio-title"
-            className="mt-3 font-playfair text-[clamp(2.25rem,4.6vw,4.25rem)] font-medium italic leading-[0.95] tracking-[-0.03em] text-white"
+            className="mt-4 font-playfair font-medium italic leading-[0.95] tracking-[-0.03em] text-white"
+            style={{ fontSize: "clamp(2.35rem, 5vw, 4.5rem)" }}
           >
             Selected Work
           </h2>
-          <p className="mt-5 max-w-xl font-dm-sans-hero text-[14px] leading-[1.85] text-white/60 sm:text-[15px]">
-            A small, focused list — each project shipped end-to-end, built to
-            perform in the real world.
+          <p className="mx-auto mt-5 max-w-xl font-dm-sans-hero text-[14px] leading-[1.85] text-white/55 sm:text-[15px]">
+            End-to-end digital products.
+            <br />
+            Designed, built and shipped with the
+            same precision as the rest of our work.
           </p>
+          <div className="mx-auto mt-6 h-px w-10 rounded-full bg-white/20" />
         </div>
 
-        {/* Project selector — moved above the stage */}
-        <div
-          ref={selectorRef}
-          className="mt-12 grid grid-cols-1 gap-3 sm:mt-14 sm:grid-cols-2 lg:gap-5"
-        >
-          {PROJECTS.map((p, i) => {
-            const isActive = active === i;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => animateTo(i)}
-                aria-pressed={isActive}
-                aria-label={`Show ${p.title} — ${p.category}`}
-                className={cn(
-                  "group relative flex items-center gap-4 rounded-2xl px-5 py-4 text-left",
-                  "border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm",
-                  "transition-[border-color,background-color,transform] duration-[420ms] ease-[cubic-bezier(0.33,1,0.68,1)]",
-                  "hover:-translate-y-[1px] hover:border-white/20 hover:bg-white/[0.05]",
-                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60",
-                  isActive && "border-white/25 bg-white/[0.05]",
-                )}
-              >
-                <span
-                  ref={(el) => {
-                    tabTickRefs.current[i] = el;
-                  }}
-                  className="block h-px shrink-0 rounded-full"
-                  style={{
-                    width: 14,
-                    backgroundColor: "rgba(255,255,255,0.22)",
-                  }}
-                  aria-hidden
-                />
-
-                <div className="relative size-10 shrink-0 overflow-hidden rounded-[0.85rem] ring-1 ring-white/10">
-                  <Image
-                    src={p.icon}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="font-dm-sans-hero text-[9px] font-medium uppercase tracking-[0.3em] text-white/45">
-                    {p.category}
-                  </p>
-                  <p className="mt-1 truncate font-dm-sans-hero text-[14px] font-semibold tracking-[-0.01em] text-white">
-                    {p.title}
-                    <span className="ml-2 font-normal text-white/45">
-                      {p.subtitle}
-                    </span>
-                  </p>
-                </div>
-
-                <span
-                  className={cn(
-                    "ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full",
-                    "border border-white/10 bg-white/[0.03] text-white/70",
-                    "transition-[background-color,color,border-color,transform] duration-[420ms] ease-[cubic-bezier(0.33,1,0.68,1)]",
-                    "group-hover:bg-white/10 group-hover:text-white",
-                    isActive &&
-                      "border-white/40 bg-white text-neutral-950 group-hover:bg-white",
-                  )}
-                  aria-hidden
-                >
-                  <svg
-                    className="size-3.5 transition-transform duration-500 group-hover:translate-x-0.5"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  >
-                    <path
-                      d="M3 8h10M9 4l4 4-4 4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Separator */}
-        <div className="relative mt-14 h-px w-full lg:mt-16">
-          <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-white/20 to-transparent"
-            style={{ width: "clamp(12rem, 38%, 48rem)" }}
-          />
-        </div>
-
-        {/* Stage */}
-        <div className="relative mt-14 grid grid-cols-1 items-start gap-12 lg:mt-20 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-0">
-          {/* Info column */}
-          <div className="relative order-2 lg:order-1 lg:col-span-5">
-            <div className="relative min-h-[340px] sm:min-h-[380px] lg:min-h-[440px]">
-              {PROJECTS.map((p, i) => {
-                const isActive = active === i;
-                return (
-                  <div
-                    key={p.id}
-                    ref={(el) => {
-                      infoRefs.current[i] = el;
-                    }}
-                    className={cn(
-                      "will-change-transform",
-                      i === 0 ? "relative" : "absolute inset-0",
-                      !isActive && "pointer-events-none",
-                    )}
-                    aria-hidden={!isActive}
-                  >
-                    <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-white/55 sm:text-[11px]">
-                      {p.category}
-                      <span className="mx-3 text-white/20">/</span>
-                      {p.year}
-                    </p>
-
-                    <h3 className="mt-5 font-dm-sans-hero text-[clamp(2rem,3.6vw,3.25rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-white">
-                      {p.title}
-                    </h3>
-                    <p className="mt-2 font-dm-sans-hero text-[clamp(1rem,1.4vw,1.3rem)] font-medium tracking-[-0.01em] text-white/65">
-                      {p.subtitle}
-                    </p>
-
-                    <p className="mt-7 max-w-[30rem] font-dm-sans-hero text-[14px] leading-[1.85] text-white/65 sm:text-[15px] lg:text-base">
-                      {p.description}
-                    </p>
-
-                    <ul className="mt-7 flex flex-wrap gap-2">
-                      {p.tags.map((t) => (
-                        <li
-                          key={t}
-                          className="font-dm-sans-hero rounded-full border border-white/[0.09] bg-white/[0.03] px-3 py-1 text-[11px] tracking-[0.02em] text-white/65"
-                        >
-                          {t}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-                      <PrimaryCta
-                        href={p.primaryCta.href}
-                        label={p.primaryCta.label}
-                      />
-                      <SecondaryCta
-                        href={p.secondaryCta.href}
-                        label={p.secondaryCta.label}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Preview column */}
-          <div className="relative order-1 lg:order-2 lg:col-span-7">
-            <div className="relative flex min-h-[480px] items-center justify-center py-8 sm:min-h-[540px] lg:min-h-[620px]">
-              {PROJECTS.map((p, i) => {
-                const isActive = active === i;
-                return (
-                  <div
-                    key={p.id}
-                    ref={(el) => {
-                      previewRefs.current[i] = el;
-                    }}
-                    className={cn(
-                      "flex items-center justify-center will-change-transform",
-                      i === 0 ? "relative" : "absolute inset-0",
-                      !isActive && "pointer-events-none",
-                    )}
-                    aria-hidden={!isActive}
-                  >
-                    <div
-                      ref={(el) => {
-                        floatRefs.current[i] = el;
-                      }}
-                      className="will-change-transform"
-                    >
-                      {p.id === "tradelens" ? (
-                        <TradeLensPreview paused={!isActive} />
-                      ) : (
-                        <QuizGPTPreview />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* vertical project stack */}
+        <div className="relative mt-20 overflow-visible sm:mt-24 lg:mt-28">
+          {PROJECTS.map((project, i) => (
+            <ProjectShowcase
+              key={project.id}
+              project={project}
+              position={i}
+              isLast={i === PROJECTS.length - 1}
+            />
+          ))}
         </div>
       </div>
     </section>

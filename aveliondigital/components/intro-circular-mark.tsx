@@ -10,11 +10,11 @@ const LOGO_SRC = "/brand/aveliondigital_intro_mark.svg";
 const RING_ROTATION_SEC = 78;
 
 /**
- * Ein Umlauf: AVELION + Wortabstand + DIGITAL + gleich großer „Wrap“-Abstand
- * (leerer Slot) vor dem erneuten A — sonst klemmt L↔A, während N↔D den Space hat.
+ * Ein Umlauf: DAVERION + Wortabstand + DIGITAL + gleich großer „Wrap“-Abstand
+ * (leerer Slot) vor dem erneuten D — sonst klemmt L↔D, während N↔D den Space hat.
  */
 function buildRingSlots(): (string | null)[] {
-  return [...("AVELION".split("")), " ", ...("DIGITAL".split("")), null];
+  return [...("DAVERION".split("")), " ", ...("DIGITAL".split("")), null];
 }
 
 const VB = 400;

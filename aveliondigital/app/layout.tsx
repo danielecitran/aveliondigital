@@ -1,34 +1,39 @@
 import type { Metadata } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { CursorFollower } from "@/components/cursor-follower";
 import "./globals.css";
 
 /*
- * Only load what is actually used:
- * – Playfair Display: exclusively "500 italic" across the entire site
- *   (hero h1, services titles, portfolio heading).
- *   Reduced from 8 variants (4 weights × 2 styles) → 1. Saves 7 font file requests.
- * – Geist / Geist_Mono removed: Geist Mono was unused template bloat.
- *   DM Sans covers all body/UI copy. Fallback to system-ui keeps render instant.
+ * Typografie-Stack (Plus Jakarta Sans als Anker):
+ * – Plus Jakarta Sans: Display-Headlines (Hero, Services, Portfolio)
+ * – Inter: Body, Labels, UI — klassische Sans-Paarung zu Plus Jakarta Sans
+ * – IBM Plex Mono: Monospace für Code/technische Akzente
  */
-const playfair = Playfair_Display({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["500"],
-  style: ["italic"],
-  variable: "--font-playfair",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-ibm-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Avelion Digital — Premium Creative & Tech Agency",
+  title: "Daverion Digital – Premium Creative & Tech Agency",
   description:
-    "Swiss creative and technology agency building apps, websites, brands and digital products. High-performance, conversion-driven, AI-powered.",
+    "Swiss creative and technology agency building apps, websites, brands and digital products. High-performance, conversion-driven and AI-powered.",
 };
 
 export default function RootLayout({
@@ -39,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

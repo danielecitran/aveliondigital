@@ -17,6 +17,11 @@ export default function Home() {
             <ServicesScroll />
           </div>
           <PortfolioSection />
+          <section
+            id="contact"
+            aria-label="Contact"
+            className="scroll-mt-[5.5rem] bg-[#050508]"
+          />
         </div>
       </ScrollSmoothLayout>
     </>
