@@ -3,6 +3,7 @@
 import * as React from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { cn } from "@/lib/utils";
 
 const SERVICES = [
   {
@@ -93,6 +94,89 @@ function getActiveTickIndex(progress: number) {
 const WAVE_PATH =
   "M0,86 C110,58 220,48 340,66 C460,84 545,132 690,130 C835,128 945,62 1085,56 C1225,50 1325,92 1440,76 L1440,170 L0,170 Z";
 
+/** ── Mobile card list (no pin, no JS scroll, no zitter) ───────────────── */
+function ServicesMobile() {
+  return (
+    <div
+      id="services"
+      className="scroll-mt-[5.5rem] bg-neutral-100"
+      aria-label="Our services"
+    >
+      {/* Section header */}
+      <div className="px-6 pb-4 pt-20 text-center sm:px-10">
+        <p className="font-dm-sans-hero text-[10px] font-medium uppercase tracking-[0.35em] text-neutral-400 sm:text-[11px]">
+          Our services
+        </p>
+        <p
+          className="font-dm-sans-hero mx-auto mt-2.5 font-semibold tracking-[-0.025em] text-neutral-950"
+          style={{ fontSize: "clamp(1.1rem, 4vw, 1.85rem)" }}
+        >
+          Your long-term digital partner
+        </p>
+        <div className="mx-auto mt-5 h-px w-10 rounded-full bg-neutral-200" />
+      </div>
+
+      {/* Cards */}
+      <div className="space-y-0 px-5 pb-4 pt-8 sm:px-8">
+        {SERVICES.map((s, i) => (
+          <div
+            key={s.num}
+            className={cn(
+              "relative overflow-hidden rounded-2xl bg-white/60 px-6 py-8 sm:px-8 sm:py-10",
+              "border border-neutral-200/80 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)]",
+              i < SERVICES.length - 1 && "mb-3",
+            )}
+          >
+            {/* Ghost index */}
+            <span
+              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 select-none font-playfair font-medium italic text-neutral-950"
+              aria-hidden
+              style={{
+                fontSize: "clamp(5.5rem, 18vw, 9rem)",
+                lineHeight: 0.92,
+                letterSpacing: "-0.04em",
+                opacity: NUM_OPACITY,
+              }}
+            >
+              {s.num}
+            </span>
+            <div className="relative z-10">
+              <h2
+                className="font-playfair font-medium italic text-neutral-950"
+                style={{ fontSize: "clamp(1.85rem, 6.5vw, 3rem)", lineHeight: 1.06, letterSpacing: "-0.03em" }}
+              >
+                {s.title.map((line, li) => (
+                  <span key={li} className="block">{line}</span>
+                ))}
+              </h2>
+              <p className="font-dm-sans-hero mt-4 text-[14px] leading-[1.8] text-neutral-500 sm:text-[15px]">
+                {s.body}
+              </p>
+              <ul className="mt-4 flex flex-wrap gap-1.5">
+                {s.tags.map((tag) => (
+                  <li
+                    key={tag}
+                    className="font-dm-sans-hero rounded-full border border-neutral-950/10 bg-white/80 px-3 py-[5px] text-[11px] tracking-[0.01em] text-neutral-500"
+                  >
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Wave transition to next section */}
+      <div className="pointer-events-none relative h-24 select-none text-black sm:h-28">
+        <div className="absolute inset-x-0 bottom-0 h-6 bg-black" style={{ boxShadow: "0 16px 0 0 #000" }} />
+        <WaveBottom className="absolute inset-x-0 bottom-0 h-[120%] w-full origin-bottom scale-y-110 opacity-25 blur-2xl" />
+        <WaveBottom className="relative h-full w-full" />
+      </div>
+    </div>
+  );
+}
+
 function WaveBottom({ className }: { className?: string }) {
   return (
     <svg
@@ -108,6 +192,20 @@ function WaveBottom({ className }: { className?: string }) {
 }
 
 export function ServicesScroll() {
+  // On touch devices the JS-pinned version shakes violently when the
+  // browser URL bar resizes the viewport. Render a plain card list instead.
+  const [isTouch, setIsTouch] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  if (isTouch) return <ServicesMobile />;
+
+  return <ServicesScrollDesktop />;
+}
+
+function ServicesScrollDesktop() {
   const outerRef = React.useRef<HTMLDivElement>(null);
   const stageRef = React.useRef<HTMLDivElement>(null);
 
@@ -127,7 +225,6 @@ export function ServicesScroll() {
     if (!outer || !stage) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isTouch = window.matchMedia("(pointer: coarse)").matches;
 
     currentIdxRef.current = 0;
 
@@ -283,8 +380,6 @@ export function ServicesScroll() {
           pinSpacing: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          // Fixed pins jump and flash white on Android when the URL bar hides.
-          ...(isTouch ? { pinType: "transform" as const } : {}),
           onUpdate: (self) => {
             updateTickProgress(self.progress);
             if (reduced) return;
