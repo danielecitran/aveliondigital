@@ -26,6 +26,10 @@ export function Hero() {
        return;
      }
 
+     const coarse = window.matchMedia("(pointer: coarse)").matches;
+     const fromBlur = (px: number) => (coarse ? {} : { filter: `blur(${px}px)` });
+     const toClear = coarse ? {} : { filter: "blur(0px)" };
+
      const ctx = gsap.context(() => {
        const titleLines = titleRef.current
          ? Array.from(titleRef.current.querySelectorAll("span"))
@@ -50,7 +54,7 @@ export function Hero() {
         * of the entry animation. Clear it afterward so they don't permanently
         * consume GPU memory.
         */
-       gsap.set(animatedEls, { willChange: "transform, opacity, filter" });
+       gsap.set(animatedEls, { willChange: coarse ? "transform, opacity" : "transform, opacity, filter" });
 
        gsap.fromTo(
          washRef.current,
@@ -78,11 +82,11 @@ export function Hero() {
        intro
          .fromTo(
            kickerLines,
-           { opacity: 0, y: 8, filter: "blur(5px)" },
+           { opacity: 0, y: 8, ...fromBlur(5) },
            {
              opacity: 1,
              y: 0,
-             filter: "blur(0px)",
+             ...toClear,
              duration: 0.62,
              stagger: 0.07,
            },
@@ -90,11 +94,11 @@ export function Hero() {
          )
          .fromTo(
            titleLines.length ? titleLines : titleRef.current,
-           { opacity: 0, y: 16, filter: "blur(10px)" },
+           { opacity: 0, y: 16, ...fromBlur(10) },
            {
              opacity: 1,
              y: 0,
-             filter: "blur(0px)",
+             ...toClear,
              duration: 0.85,
              stagger: 0.08,
            },
@@ -102,14 +106,14 @@ export function Hero() {
          )
          .fromTo(
            subRef.current,
-           { opacity: 0, y: 10, filter: "blur(6px)" },
-           { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.7 },
+           { opacity: 0, y: 10, ...fromBlur(6) },
+           { opacity: 1, y: 0, ...toClear, duration: 0.7 },
            0.28,
          )
          .fromTo(
            ctaRef.current,
-           { opacity: 0, y: 10, scale: 0.985, filter: "blur(4px)" },
-           { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.75 },
+           { opacity: 0, y: 10, scale: 0.985, ...fromBlur(4) },
+           { opacity: 1, y: 0, scale: 1, ...toClear, duration: 0.75 },
            0.42,
          )
          // Release GPU layers once the entry animation is complete.
@@ -122,7 +126,7 @@ export function Hero() {
   return (
     <section
        ref={rootRef}
-      className="relative isolate flex min-h-svh w-full items-center overflow-hidden"
+      className="viewport-fill relative isolate flex min-h-svh w-full items-center overflow-hidden"
       aria-labelledby="hero-heading"
     >
       <div className="pointer-events-none absolute inset-0 z-0">

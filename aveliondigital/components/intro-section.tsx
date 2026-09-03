@@ -44,19 +44,21 @@ export function IntroSection() {
       return;
     }
 
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+
     const ctx = gsap.context(() => {
       gsap.fromTo(
         el,
         {
-          y: 56,
+          y: coarse ? 28 : 56,
           opacity: 0,
-          filter: "blur(10px)",
+          ...(coarse ? {} : { filter: "blur(10px)" }),
         },
         {
           y: 0,
           opacity: 1,
-          filter: "blur(0px)",
-          duration: 1.05,
+          ...(coarse ? {} : { filter: "blur(0px)" }),
+          duration: coarse ? 0.7 : 1.05,
           ease: "power3.out",
           delay: 0.12,
           clearProps: "transform,filter",

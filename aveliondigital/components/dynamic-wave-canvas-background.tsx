@@ -27,6 +27,18 @@ function createWaveCanvas(): HTMLCanvasElement {
   return canvas;
 }
 
+function getCanvasSize(isTouch: boolean) {
+  if (!isTouch) {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+  // Don't follow the URL bar: innerHeight changes on every Android scroll
+  // and rebuilding the canvas is what looks like a display glitch.
+  return {
+    width: window.innerWidth,
+    height: Math.max(window.innerHeight, Math.round(window.screen.height || window.innerHeight)),
+  };
+}
+
 export default function HeroWave() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -77,22 +89,24 @@ export default function HeroWave() {
 
         worker = new Worker("/wave-worker.js");
 
+        const size = getCanvasSize(isTouch);
         worker.postMessage(
           {
             type: "init",
             canvas: offscreen,
             isTouch,
-            width:  window.innerWidth,
-            height: window.innerHeight,
+            width: size.width,
+            height: size.height,
           },
           [offscreen], // Transfer — not clone
         );
 
         const onResize = () => {
+          const next = getCanvasSize(isTouch);
           worker?.postMessage({
             type: "resize",
-            width:  window.innerWidth,
-            height: window.innerHeight,
+            width: next.width,
+            height: next.height,
           });
         };
 
@@ -100,11 +114,16 @@ export default function HeroWave() {
           worker?.postMessage({ type: "visibility", hidden: document.hidden });
         };
 
-        window.addEventListener("resize", onResize, { passive: true });
+        if (isTouch) {
+          window.addEventListener("orientationchange", onResize, { passive: true });
+        } else {
+          window.addEventListener("resize", onResize, { passive: true });
+        }
         document.addEventListener("visibilitychange", onVisibility);
 
         return () => {
           window.removeEventListener("resize", onResize);
+          window.removeEventListener("orientationchange", onResize);
           document.removeEventListener("visibilitychange", onVisibility);
           worker?.postMessage({ type: "stop" });
           worker?.terminate();
@@ -141,8 +160,9 @@ export default function HeroWave() {
     let data: Uint8ClampedArray;
 
     const resizeCanvas = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const size = getCanvasSize(isTouch);
+      canvas.width = size.width;
+      canvas.height = size.height;
       const aspect = canvas.width / canvas.height;
       let h = Math.floor(Math.sqrt(MAX_SIM_PIXELS / aspect));
       let w = Math.floor(h * aspect);
@@ -154,7 +174,11 @@ export default function HeroWave() {
       data = imageData.data;
     };
 
-    window.addEventListener("resize", resizeCanvas, { passive: true });
+    if (isTouch) {
+      window.addEventListener("orientationchange", resizeCanvas, { passive: true });
+    } else {
+      window.addEventListener("resize", resizeCanvas, { passive: true });
+    }
     resizeCanvas();
 
     const SIN_TABLE = new Float32Array(1024);
@@ -227,6 +251,7 @@ export default function HeroWave() {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("orientationchange", resizeCanvas);
       document.removeEventListener("visibilitychange", onVisibility);
       cancelAnimationFrame(rafId);
       canvas.remove();

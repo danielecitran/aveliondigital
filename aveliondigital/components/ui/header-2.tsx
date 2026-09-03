@@ -28,6 +28,9 @@ function useStickToViewport(ref: React.RefObject<HTMLElement | null>) {
   React.useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // On touch, the URL bar resizes the visual viewport every scroll.
+    // Fighting that with a rAF lock causes the header to jitter.
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     let correction = 0;
     let raf = 0;

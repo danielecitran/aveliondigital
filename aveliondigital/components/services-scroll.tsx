@@ -127,6 +127,7 @@ export function ServicesScroll() {
     if (!outer || !stage) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
 
     currentIdxRef.current = 0;
 
@@ -282,6 +283,8 @@ export function ServicesScroll() {
           pinSpacing: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          // Fixed pins jump and flash white on Android when the URL bar hides.
+          ...(isTouch ? { pinType: "transform" as const } : {}),
           onUpdate: (self) => {
             updateTickProgress(self.progress);
             if (reduced) return;
@@ -312,8 +315,7 @@ export function ServicesScroll() {
     >
       <div
         ref={stageRef}
-        className="relative flex w-full flex-col overflow-x-hidden bg-neutral-100"
-        style={{ height: "100svh" }}
+        className="pin-stage relative flex h-[100svh] w-full flex-col overflow-x-hidden bg-neutral-100"
       >
         {/* ── Decorative background ────────────────────────────────────────── */}
         <div

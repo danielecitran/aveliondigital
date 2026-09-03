@@ -254,6 +254,39 @@
   }
 }
 
+/**
+ * Mobile-only chrome. Desktop is unchanged: no overscroll CSS (breaks
+ * mouse-wheel + ScrollSmoother) and no body-color change.
+ *
+ * Android Chrome shows the html/body background when the URL bar hides,
+ * during overscroll, and in 1px pin gaps — `bg-background` is white.
+ */
+@media (pointer: coarse) {
+  html.h-full {
+    height: auto;
+    min-height: 100dvh;
+    background-color: #050508;
+    overscroll-behavior: none;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #050508;
+    overscroll-behavior: none;
+    overflow-x: clip;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .viewport-fill {
+    min-height: 100lvh;
+  }
+
+  .pin-stage {
+    height: 100lvh;
+  }
+}
+
 @layer utilities {
   .font-playfair {
     font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;

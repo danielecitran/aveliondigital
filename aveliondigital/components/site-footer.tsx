@@ -64,7 +64,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer ref={rootRef} className="px-4 pb-4 pt-16 sm:px-6 sm:pb-6 sm:pt-20 lg:px-8 lg:pb-8 lg:pt-24">
+    <footer ref={rootRef} className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16 sm:px-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pt-20 lg:px-8 lg:pb-8 lg:pt-24">
       <div
         className={cn(
           "relative overflow-hidden bg-[#050508] text-white",
