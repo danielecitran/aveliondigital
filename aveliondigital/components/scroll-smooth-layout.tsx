@@ -57,6 +57,11 @@ export function ScrollSmoothLayout({ children }: Props) {
       ease: prefersReduced ? undefined : "power2.out",
       smoothTouch: 0,
       effects: false,
+      // Intercepts wheel/trackpad so the document never elastic-overscrolls.
+      // Do not set overscroll-behavior on #smooth-wrapper — that eats mouse-wheel.
+      normalizeScroll: prefersReduced
+        ? false
+        : { debounce: false, allowNestedScroll: true },
       onUpdate: () => {
         if (!scrollPending) {
           scrollPending = true;

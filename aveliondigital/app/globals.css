@@ -133,14 +133,9 @@
   }
   html {
     @apply font-sans;
-    overscroll-behavior-y: none;
   }
   body {
     @apply bg-background text-foreground;
-    overscroll-behavior-y: none;
-  }
-  #smooth-wrapper {
-    overscroll-behavior: none;
   }
   button:not(:disabled),
   [role="button"],
