@@ -133,6 +133,15 @@ export default function TradeLensTermsPage() {
         not be affected.
       </DocSection>
 
+      <DocSection heading="15. Written Form">
+        Deviations from these General Terms and Conditions require written form.
+      </DocSection>
+
+      <DocSection heading="16. Place of Jurisdiction">
+        The place of jurisdiction for all disputes arising from the project
+        relationship is Zurich, Switzerland.
+      </DocSection>
+
       <div style={{ paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <h2
           style={{
@@ -143,7 +152,7 @@ export default function TradeLensTermsPage() {
             marginBottom: 14,
           }}
         >
-          15. Contact
+          17. Contact
         </h2>
         <p
           style={{

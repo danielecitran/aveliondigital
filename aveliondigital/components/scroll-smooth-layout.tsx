@@ -27,6 +27,8 @@ export function ScrollSmoothLayout({ children }: Props) {
     gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
     resetPageScroll();
 
+    ScrollTrigger.config({ ignoreMobileResize: true });
+
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isTouch = window.matchMedia("(pointer: coarse)").matches;
 

@@ -99,8 +99,13 @@ export function Header() {
     <>
       <header
         className={cn(
-          "fixed left-0 right-0 top-0 z-[70] flex justify-center px-6 pt-4 sm:px-10 lg:px-14",
+          "fixed inset-x-0 top-0 z-[70] flex justify-center px-6 pt-[max(1rem,env(safe-area-inset-top))] sm:px-10 lg:px-14",
         )}
+        style={{
+          transform: "translate3d(0,0,0)",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+        }}
       >
         <div
           className={cn(
