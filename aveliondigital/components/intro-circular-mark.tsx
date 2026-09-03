@@ -124,7 +124,7 @@ export function IntroCircularMark() {
         >
           <Image
             src={LOGO_SRC}
-            alt="Avelion Digital"
+            alt="Daverion Digital"
             width={1500}
             height={1500}
             className="relative z-[1] size-full object-contain"

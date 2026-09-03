@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "Terms and Conditions | Daverion Digital",
+  title: "Terms and Conditions",
   description:
     "General terms and conditions of Daverion Digital KLG for strategy, design, software and digital projects under Swiss law.",
+  alternates: { canonical: "/terms" },
 };
 
 const headingClass =

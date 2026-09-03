@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Daverion Digital",
+  title: "Privacy Policy",
   description:
     "Privacy policy of Daverion Digital KLG. How we collect, process and protect personal data under Swiss data protection law.",
+  alternates: { canonical: "/privacy" },
 };
 
 const headingClass =

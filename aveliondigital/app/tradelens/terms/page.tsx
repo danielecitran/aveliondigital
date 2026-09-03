@@ -10,7 +10,9 @@ import {
 
 export const metadata: Metadata = {
   title: "Terms of Use | TradeLens",
-  description: "Terms and Conditions of the TradeLens iOS App by Daverion Digital.",
+  description:
+    "Terms of Use of the TradeLens App — the iOS AI chart analysis app by Daverion Digital.",
+  alternates: { canonical: "/tradelens/terms" },
 };
 
 export default function TradeLensTermsPage() {

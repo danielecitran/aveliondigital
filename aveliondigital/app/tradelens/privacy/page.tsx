@@ -10,7 +10,9 @@ import {
 
 export const metadata: Metadata = {
   title: "Privacy Policy | TradeLens",
-  description: "Privacy Policy of the TradeLens iOS App by Daverion Digital.",
+  description:
+    "Privacy Policy of the TradeLens App — the iOS AI chart analysis app by Daverion Digital.",
+  alternates: { canonical: "/tradelens/privacy" },
 };
 
 export default function TradeLensPrivacyPage() {

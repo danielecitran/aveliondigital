@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "Imprint | Daverion Digital",
+  title: "Imprint",
   description:
-    "Legal notice of Daverion Digital KLG, Kilchberg, Switzerland. Address, authorised representatives, commercial register details and liability information.",
+    "Legal notice of Daverion Digital KLG, Kilchberg, Switzerland. Daniele Citran and Erik Buser, partners. Address, commercial register and liability information.",
+  alternates: { canonical: "/imprint" },
 };
 
 const headingClass =

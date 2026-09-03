@@ -185,7 +185,7 @@ export function HeaderLogoAnimatedSvg() {
       <span className="inline-flex origin-center items-center leading-none">
         <Image
           src={LOGO_SRC}
-          alt="Avelion Digital"
+          alt="Daverion Digital"
           width={750}
           height={150}
           className="block h-7 w-auto max-w-[min(72vw,15rem)] object-contain object-left sm:h-8 sm:max-w-[18rem]"
@@ -201,7 +201,7 @@ export function HeaderLogoAnimatedSvg() {
       ref={mountRef}
       className="inline-flex min-h-[1.75rem] items-center leading-none sm:min-h-8"
       role="img"
-      aria-label="Avelion Digital"
+      aria-label="Daverion Digital"
     />
   );
 }
