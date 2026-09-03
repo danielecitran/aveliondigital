@@ -273,10 +273,10 @@ export default function PrivacyPage() {
             <br />
             Website:{" "}
             <a
-              href="https://www.daverion.digital"
+              href="https://daverion.digital"
               className={linkClass}
             >
-              www.daverion.digital
+              daverion.digital
             </a>
           </address>
         </section>
